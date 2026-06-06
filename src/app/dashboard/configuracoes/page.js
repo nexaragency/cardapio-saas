@@ -78,8 +78,8 @@ export default function Configuracoes() {
             style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
           />
           <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6C757D' }}>
-            Formato: codigo do pais + DDD + numero. Ex: 5545999887766
-          </p>
+  Formato: DDD + numero. Ex: 45999887766
+</p>
         </div>
 
         {success && (
@@ -120,7 +120,7 @@ export default function Configuracoes() {
         <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#6C757D', lineHeight: 2 }}>
           <li>Coloque o numero do WhatsApp do restaurante no campo acima</li>
           <li>Use o formato internacional: 55 + DDD + numero</li>
-          <li>Exemplo: 5545999887766 para Parana com DDD 45</li>
+          <li>Exemplo: 45999887766 para Parana com DDD 45</li>
           <li>Quando um cliente fizer um pedido, ele sera enviado direto para esse numero</li>
         </ol>
       </div>

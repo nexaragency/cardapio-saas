@@ -72,7 +72,7 @@ export default function CardapioPublico({ params }) {
     if (!customerName.trim()) { alert('Por favor, informe seu nome.'); return }
     const lines = cart.map(i => i.qty + 'x ' + i.name + ' - R$ ' + (i.price * i.qty).toFixed(2))
     const msg = 'Ola! Meu nome e ' + customerName + '.\n\nPedido:\n' + lines.join('\n') + '\n\nTotal: R$ ' + getTotal().toFixed(2)
-    const phone = tenant.phone ? tenant.phone.replace(/\D/g, '') : ''
+    const phone = tenant.phone ? '55' + tenant.phone.replace(/\D/g, '') : ''
     window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank')
   }
 
