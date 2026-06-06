@@ -131,7 +131,7 @@ export default function Categorias() {
                 style={{
                   padding: '6px 14px', borderRadius: 6, border: 'none',
                   cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: cat.active ? '#E8F8F5', color: cat.active ? '#00B894' : '#6C757D'
+                  background: cat.active ? '#E8F8F5' : '#F8F9FA', color: cat.active ? '#00B894' : '#6C757D'
                 }}
               >
                 {cat.active ? 'Ativa' : 'Inativa'}
