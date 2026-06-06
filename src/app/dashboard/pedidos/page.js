@@ -73,25 +73,27 @@ export default function Pedidos() {
       i.quantity + 'x ' + i.product_name + ' — R$ ' + Number(i.subtotal).toFixed(2)
     ).join('\n')
 
+    const isSalao = order.order_type === 'salao'
+
     const content = `
 PEDIDO #${order.id.slice(-6).toUpperCase()}
 ${new Date(order.created_at).toLocaleString('pt-BR')}
 ================================
-CLIENTE: ${order.customer_name}
-TELEFONE: ${order.customer_phone || '-'}
-ENDERECO: ${order.customer_address}
-BAIRRO: ${order.neighborhood || '-'}
-CIDADE: ${order.city || '-'}
+${isSalao ? 'MESA: ' + order.table_number : 'CLIENTE: ' + order.customer_name}
+${isSalao ? '' : 'TELEFONE: ' + (order.customer_phone || '-')}
+${isSalao ? '' : 'ENDERECO: ' + order.customer_address}
+${isSalao ? '' : 'BAIRRO: ' + (order.neighborhood || '-')}
+${isSalao ? '' : 'CIDADE: ' + (order.city || '-')}
 ================================
 ITENS:
 ${items}
 ================================
-Subtotal: R$ ${(Number(order.total) - Number(order.delivery_fee)).toFixed(2)}
-Taxa entrega: R$ ${Number(order.delivery_fee).toFixed(2)}
+${isSalao ? '' : 'Subtotal: R$ ' + (Number(order.total) - Number(order.delivery_fee)).toFixed(2)}
+${isSalao ? '' : 'Taxa entrega: R$ ' + Number(order.delivery_fee).toFixed(2)}
 TOTAL: R$ ${Number(order.total).toFixed(2)}
 ================================
-PAGAMENTO: ${PAYMENT_LABEL[order.payment_method] || order.payment_method}
-${order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : ''}
+${isSalao ? 'PAGAMENTO: A definir no salao' : 'PAGAMENTO: ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
+${!isSalao && order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : ''}
     `.trim()
 
     const win = window.open('', '_blank')
@@ -160,7 +162,10 @@ ${order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : '
                   {'#' + order.id.slice(-6).toUpperCase() + ' — ' + order.customer_name}
                 </div>
                 <div style={{ fontSize: 12, color: '#6C757D', marginTop: 3 }}>
-                  {new Date(order.created_at).toLocaleString('pt-BR') + (order.order_type === 'salao' ? ' · Mesa ' + order.table_number : ' · ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method))}
+                  {new Date(order.created_at).toLocaleString('pt-BR')}
+                  {order.order_type === 'salao'
+                    ? ' · Mesa ' + order.table_number
+                    : ' · ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -181,26 +186,26 @@ ${order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : '
               <div style={{ borderTop: '1px solid #E9ECEF', padding: '16px 20px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>ENDERECO</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>
+                      {order.order_type === 'salao' ? 'MESA' : 'ENDERECO'}
+                    </div>
                     <div style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>
-                      {order.customer_address}<br />
-                      {order.neighborhood && order.neighborhood + ', '}{order.city}
+                      {order.order_type === 'salao'
+                        ? 'Mesa ' + order.table_number
+                        : order.customer_address + ', ' + (order.neighborhood || '') + ', ' + (order.city || '')}
                     </div>
                   </div>
                   <div>
-  <div>
-  <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>
-    {order.order_type === 'salao' ? 'MESA' : 'PAGAMENTO'}
-  </div>
-  <div style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>
-    {order.order_type === 'salao'
-      ? 'Mesa ' + order.table_number + ' — Pagamento no salao'
-      : PAYMENT_LABEL[order.payment_method] || order.payment_method}
-    {order.order_type !== 'salao' && order.change_for
-      ? ' — Troco para R$ ' + Number(order.change_for).toFixed(2)
-      : ''}
-  </div>
-</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>
+                      {order.order_type === 'salao' ? 'TIPO' : 'PAGAMENTO'}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>
+                      {order.order_type === 'salao'
+                        ? 'Consumo no salao'
+                        : (PAYMENT_LABEL[order.payment_method] || order.payment_method) + (order.change_for ? ' — Troco para R$ ' + Number(order.change_for).toFixed(2) : '')}
+                    </div>
+                  </div>
+                </div>
 
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>ITENS</div>
@@ -210,10 +215,12 @@ ${order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : '
                       <span style={{ color: '#1A1A2E', fontWeight: 600 }}>{'R$ ' + Number(item.subtotal).toFixed(2)}</span>
                     </div>
                   ))}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: 13 }}>
-                    <span style={{ color: '#6C757D' }}>Taxa de entrega</span>
-                    <span style={{ color: '#1A1A2E' }}>{'R$ ' + Number(order.delivery_fee).toFixed(2)}</span>
-                  </div>
+                  {order.order_type !== 'salao' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: 13 }}>
+                      <span style={{ color: '#6C757D' }}>Taxa de entrega</span>
+                      <span style={{ color: '#1A1A2E' }}>{'R$ ' + Number(order.delivery_fee).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: 14, fontWeight: 700 }}>
                     <span style={{ color: '#1A1A2E' }}>Total</span>
                     <span style={{ color: '#00B894' }}>{'R$ ' + Number(order.total).toFixed(2)}</span>
