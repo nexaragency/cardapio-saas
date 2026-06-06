@@ -3,6 +3,22 @@
 import { useEffect, useState, use } from 'react'
 import { supabase } from '@/lib/supabase'
 
+const STATUS_FLOW = ['novo', 'impresso', 'em_preparo', 'saiu_entrega', 'entregue']
+const STATUS_LABEL = {
+  novo: 'Pedido recebido',
+  impresso: 'Pedido confirmado',
+  em_preparo: 'Em preparo',
+  saiu_entrega: 'Saiu para entrega!',
+  entregue: 'Entregue!'
+}
+const STATUS_DESC = {
+  novo: 'Aguardando confirmacao do restaurante',
+  impresso: 'O restaurante confirmou seu pedido',
+  em_preparo: 'Seu pedido esta sendo preparado',
+  saiu_entrega: 'O motoboy esta a caminho!',
+  entregue: 'Pedido entregue. Bom apetite!'
+}
+
 export default function CardapioPublico({ params }) {
   const { slug } = use(params)
   const [tenant, setTenant] = useState(null)
@@ -14,9 +30,10 @@ export default function CardapioPublico({ params }) {
   const [activeCategory, setActiveCategory] = useState(null)
   const [step, setStep] = useState('menu')
   const [submitting, setSubmitting] = useState(false)
-  const [orderDone, setOrderDone] = useState(false)
+  const [currentOrder, setCurrentOrder] = useState(null)
   const [form, setForm] = useState({
-    name: '', phone: '', address: '', neighborhood: '', city: '', payment_method: 'dinheiro', change_for: ''
+    name: '', phone: '', address: '', neighborhood: '', city: '',
+    payment_method: 'dinheiro', change_for: ''
   })
   const [deliveryFee, setDeliveryFee] = useState(null)
   const [neighborhoodError, setNeighborhoodError] = useState('')
@@ -44,19 +61,61 @@ export default function CardapioPublico({ params }) {
         .eq('tenant_id', tenantData.id).eq('active', true)
       setZones(zns || [])
 
+      const savedOrderId = localStorage.getItem('order_' + slug)
+      if (savedOrderId) {
+        const { data: savedOrder } = await supabase
+          .from('orders').select('*, order_items(*)')
+          .eq('id', savedOrderId).single()
+        if (savedOrder && savedOrder.status !== 'entregue') {
+          setCurrentOrder(savedOrder)
+          setStep('tracking')
+        }
+      }
+
       setLoading(false)
     }
     loadData()
   }, [slug])
 
+  useEffect(() => {
+    if (!currentOrder) return
+
+    if (Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
+    const channel = supabase
+      .channel('order_' + currentOrder.id)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: 'id=eq.' + currentOrder.id
+      }, payload => {
+        const updated = payload.new
+        setCurrentOrder(prev => ({ ...prev, ...updated }))
+
+        if (updated.status === 'saiu_entrega' && Notification.permission === 'granted') {
+          new Notification('Seu pedido saiu para entrega!', {
+            body: 'O motoboy esta a caminho. Prepare-se!',
+            icon: '/favicon.ico'
+          })
+        }
+
+        if (updated.status === 'entregue') {
+          localStorage.removeItem('order_' + slug)
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [currentOrder?.id])
+
   async function lookupCustomer(phone) {
-    if (!phone || phone.length < 8) return
+    if (!phone || phone.length < 8 || !tenant) return
     const { data } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('tenant_id', tenant.id)
-      .eq('phone', phone)
-      .single()
+      .from('customers').select('*')
+      .eq('tenant_id', tenant.id).eq('phone', phone).single()
     if (data) {
       setForm(prev => ({
         ...prev,
@@ -65,22 +124,15 @@ export default function CardapioPublico({ params }) {
         neighborhood: data.neighborhood || prev.neighborhood,
         city: data.city || prev.city
       }))
-      if (data.neighborhood) {
-        checkDeliveryFee(data.neighborhood)
-      }
+      if (data.neighborhood) checkDeliveryFee(data.neighborhood)
     }
   }
 
   function checkDeliveryFee(neighborhood) {
     if (!neighborhood.trim()) { setDeliveryFee(null); setNeighborhoodError(''); return }
     const zone = zones.find(z => z.neighborhood.toLowerCase().trim() === neighborhood.toLowerCase().trim())
-    if (zone) {
-      setDeliveryFee(zone.fee)
-      setNeighborhoodError('')
-    } else {
-      setDeliveryFee(null)
-      setNeighborhoodError('Bairro fora da area de entrega')
-    }
+    if (zone) { setDeliveryFee(zone.fee); setNeighborhoodError('') }
+    else { setDeliveryFee(null); setNeighborhoodError('Bairro fora da area de entrega') }
   }
 
   function addToCart(product) {
@@ -115,8 +167,7 @@ export default function CardapioPublico({ params }) {
     setSubmitting(true)
 
     const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
+      .from('orders').insert({
         tenant_id: tenant.id,
         customer_name: form.name,
         customer_phone: form.phone,
@@ -128,21 +179,20 @@ export default function CardapioPublico({ params }) {
         delivery_fee: deliveryFee || 0,
         total: getTotal(),
         status: 'novo'
-      })
-      .select().single()
+      }).select().single()
 
     if (orderError) { alert('Erro ao fazer pedido. Tente novamente.'); setSubmitting(false); return }
 
-    const items = cart.map(i => ({
-      order_id: order.id,
-      product_id: i.id,
-      product_name: i.name,
-      quantity: i.qty,
-      unit_price: i.price,
-      subtotal: i.price * i.qty
-    }))
-
-    await supabase.from('order_items').insert(items)
+    await supabase.from('order_items').insert(
+      cart.map(i => ({
+        order_id: order.id,
+        product_id: i.id,
+        product_name: i.name,
+        quantity: i.qty,
+        unit_price: i.price,
+        subtotal: i.price * i.qty
+      }))
+    )
 
     await supabase.from('customers').upsert({
       tenant_id: tenant.id,
@@ -153,8 +203,16 @@ export default function CardapioPublico({ params }) {
       city: form.city
     }, { onConflict: 'tenant_id,phone' })
 
-    setOrderDone(true)
+    localStorage.setItem('order_' + slug, order.id)
+
+    const { data: fullOrder } = await supabase
+      .from('orders').select('*, order_items(*)')
+      .eq('id', order.id).single()
+
+    setCurrentOrder(fullOrder)
+    setCart([])
     setSubmitting(false)
+    setStep('tracking')
   }
 
   const filteredProducts = activeCategory
@@ -173,26 +231,95 @@ export default function CardapioPublico({ params }) {
     </div>
   )
 
-  if (orderDone) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F8F9FA', padding: 24 }}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: 40, textAlign: 'center', maxWidth: 400, width: '100%', border: '1px solid #E9ECEF' }}>
-        <div style={{ width: 64, height: 64, background: '#E8F8F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 28 }}>✓</div>
-        <h2 style={{ color: '#1A1A2E', fontSize: 20, fontWeight: 700, margin: '0 0 10px' }}>Pedido realizado!</h2>
-        <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 24px' }}>Seu pedido foi recebido e esta sendo preparado.</p>
-        <button
-          onClick={() => { setCart([]); setOrderDone(false); setStep('menu'); setForm({ name: '', phone: '', address: '', neighborhood: '', city: '', payment_method: 'dinheiro', change_for: '' }) }}
-          style={{ padding: '12px 28px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
-        >
-          Fazer novo pedido
-        </button>
+  if (step === 'tracking' && currentOrder) {
+    const statusIndex = STATUS_FLOW.indexOf(currentOrder.status)
+    const isDelivered = currentOrder.status === 'entregue'
+
+    return (
+      <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
+        <div style={{ background: '#00B894', padding: '28px 20px 20px', textAlign: 'center' }}>
+          <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>{tenant.name}</h1>
+          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>
+            Pedido #{currentOrder.id.slice(-6).toUpperCase()}
+          </p>
+        </div>
+
+        <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 16px' }}>
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 28, marginBottom: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>
+              {currentOrder.status === 'novo' ? '🕐' :
+               currentOrder.status === 'impresso' ? '✅' :
+               currentOrder.status === 'em_preparo' ? '👨‍🍳' :
+               currentOrder.status === 'saiu_entrega' ? '🛵' : '🎉'}
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A2E', margin: '0 0 8px' }}>
+              {STATUS_LABEL[currentOrder.status]}
+            </h2>
+            <p style={{ color: '#6C757D', fontSize: 14, margin: 0 }}>
+              {STATUS_DESC[currentOrder.status]}
+            </p>
+          </div>
+
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+              {STATUS_FLOW.map((s, i) => (
+                <div key={s} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: i <= statusIndex ? '#00B894' : '#E9ECEF',
+                    color: i <= statusIndex ? '#fff' : '#adb5bd',
+                    fontSize: 12, fontWeight: 700, marginBottom: 6
+                  }}>
+                    {i < statusIndex ? '✓' : i + 1}
+                  </div>
+                  {i < STATUS_FLOW.length - 1 && (
+                    <div style={{ position: 'absolute' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{ height: 4, background: '#E9ECEF', borderRadius: 2, position: 'relative', marginBottom: 8 }}>
+              <div style={{
+                height: 4, background: '#00B894', borderRadius: 2,
+                width: (statusIndex / (STATUS_FLOW.length - 1) * 100) + '%',
+                transition: 'width 0.5s ease'
+              }} />
+            </div>
+          </div>
+
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 12 }}>RESUMO</div>
+            {currentOrder.order_items && currentOrder.order_items.map(item => (
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 13 }}>
+                <span style={{ color: '#1A1A2E' }}>{item.quantity}x {item.product_name}</span>
+                <span style={{ fontWeight: 600, color: '#1A1A2E' }}>R$ {Number(item.subtotal).toFixed(2)}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: '1px solid #E9ECEF', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}>
+              <span style={{ color: '#1A1A2E' }}>Total</span>
+              <span style={{ color: '#00B894' }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
+            </div>
+          </div>
+
+          {isDelivered ? (
+            <button
+              onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
+              style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}
+            >
+              Fazer novo pedido
+            </button>
+          ) : (
+            <p style={{ textAlign: 'center', color: '#adb5bd', fontSize: 12, margin: 0 }}>
+              Atualizando automaticamente...
+            </p>
+          )}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif', paddingBottom: 100 }}>
-
-      {/* HEADER */}
       <div style={{ background: '#00B894', padding: '28px 20px 20px', textAlign: 'center' }}>
         <div style={{ width: 64, height: 64, background: 'rgba(255,255,255,0.2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 28, fontWeight: 700, color: '#fff' }}>
           {tenant.name.charAt(0)}
@@ -303,62 +430,39 @@ export default function CardapioPublico({ params }) {
 
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEUS DADOS</div>
-
-            <input
-              type="tel"
-              placeholder="Telefone (para identificar seu cadastro)"
-              value={form.phone}
+            <input type="tel" placeholder="Telefone *" value={form.phone}
               onChange={e => setForm({ ...form, phone: e.target.value })}
               onBlur={e => lookupCustomer(e.target.value)}
-              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-            />
-            <input
-              type="text"
-              placeholder="Seu nome *"
-              value={form.name}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }} />
+            <input type="text" placeholder="Seu nome *" value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
-              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-            />
-            <input
-              type="text"
-              placeholder="Endereco (rua e numero) *"
-              value={form.address}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }} />
+            <input type="text" placeholder="Endereco (rua e numero) *" value={form.address}
               onChange={e => setForm({ ...form, address: e.target.value })}
-              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-            />
-            <input
-              type="text"
-              placeholder="Bairro *"
-              value={form.neighborhood}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }} />
+            <input type="text" placeholder="Bairro *" value={form.neighborhood}
               onChange={e => { setForm({ ...form, neighborhood: e.target.value }); checkDeliveryFee(e.target.value) }}
-              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: neighborhoodError ? '1px solid #e53935' : '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 4 }}
-            />
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: neighborhoodError ? '1px solid #e53935' : '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 4 }} />
             {neighborhoodError && <p style={{ color: '#e53935', fontSize: 12, margin: '0 0 10px' }}>{neighborhoodError}</p>}
             {deliveryFee !== null && !neighborhoodError && (
               <p style={{ color: '#00B894', fontSize: 12, margin: '0 0 10px', fontWeight: 600 }}>
                 {deliveryFee === 0 ? 'Entrega gratis neste bairro!' : 'Taxa de entrega: R$ ' + deliveryFee.toFixed(2)}
               </p>
             )}
-            <input
-              type="text"
-              placeholder="Cidade"
-              value={form.city}
+            <input type="text" placeholder="Cidade" value={form.city}
               onChange={e => setForm({ ...form, city: e.target.value })}
-              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
-            />
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
           </div>
 
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>FORMA DE PAGAMENTO</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
               {['dinheiro', 'pix', 'debito', 'credito'].map(method => (
-                <button
-                  key={method}
-                  onClick={() => setForm({ ...form, payment_method: method })}
+                <button key={method} onClick={() => setForm({ ...form, payment_method: method })}
                   style={{
                     padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
                     border: form.payment_method === method ? '2px solid #00B894' : '1px solid #E9ECEF',
-                    background: form.payment_method === method ? '#E8F8F5' : '#fff',
+                    background: form.payment_method === method ? '#E8F5F5' : '#fff',
                     color: form.payment_method === method ? '#00B894' : '#6C757D'
                   }}
                 >
@@ -367,19 +471,13 @@ export default function CardapioPublico({ params }) {
               ))}
             </div>
             {form.payment_method === 'dinheiro' && (
-              <input
-                type="number"
-                placeholder="Troco para quanto? (opcional)"
-                value={form.change_for}
+              <input type="number" placeholder="Troco para quanto? (opcional)" value={form.change_for}
                 onChange={e => setForm({ ...form, change_for: e.target.value })}
-                style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
-              />
+                style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
             )}
           </div>
 
-          <button
-            onClick={handleSubmitOrder}
-            disabled={submitting}
+          <button onClick={handleSubmitOrder} disabled={submitting}
             style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}
           >
             {submitting ? 'Enviando pedido...' : 'Confirmar pedido — R$ ' + getTotal().toFixed(2)}
