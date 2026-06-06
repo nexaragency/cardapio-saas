@@ -235,15 +235,14 @@ export default function CardapioPublico({ params }) {
                 placeholder="Seu nome *"
                 value={customerName}
                 onChange={e => setCustomerName(e.target.value)}
-                style={{ display: 'block', width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+                style={{ display: 'block', width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 10, color: '#1A1A2E' }} 'none', boxSizing: 'border-box', marginBottom: 10 }}
               />
               <input
                 type="tel"
                 placeholder="Seu telefone (opcional)"
                 value={customerPhone}
                 onChange={e => setCustomerPhone(e.target.value)}
-                style={{ display: 'block', width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
+              />style={{ display: 'block', width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, outline: 'none', boxSizing: 'border-box', color: '#1A1A2E' }}
             </div>
 
             <button
