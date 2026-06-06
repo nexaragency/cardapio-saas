@@ -87,50 +87,24 @@ export default function DashboardLayout({ children }) {
         {/* Nav */}
         <nav style={{ flex: 1, padding: '12px 12px' }}>
           {navItems.map(item => {
-            const active = pathname === item.href
-            return (
-              
-                key={item.href}
-                href={item.href}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 12px', borderRadius: 8, marginBottom: 2,
-                  textDecoration: 'none',
-                  background: active ? '#E8F8F5' : 'transparent',
-                  color: active ? '#00B894' : '#6C757D',
-                  fontWeight: active ? 600 : 400,
-                  fontSize: 14,
-                  transition: 'all 0.15s'
-                }}
-              >
-                <span style={{ fontSize: 16 }}>{item.icon}</span>
-                {item.label}
-              </a>
-            )
-          })}
-        </nav>
-
-        {/* Logout */}
-        <div style={{ padding: '16px 12px', borderTop: '1px solid #E9ECEF' }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              width: '100%', padding: '10px 12px',
-              background: 'transparent', border: '1px solid #E9ECEF',
-              borderRadius: 8, cursor: 'pointer',
-              color: '#6C757D', fontSize: 14, textAlign: 'left',
-              display: 'flex', alignItems: 'center', gap: 10
-            }}
-          >
-            <span>⇥</span> Sair
-          </button>
-        </div>
-      </aside>
-
-      {/* CONTEÚDO */}
-      <main style={{ marginLeft: 240, flex: 1, padding: 32 }}>
-        {children}
-      </main>
-    </div>
+  const active = pathname === item.href
+  return (
+    
+      key={item.href}
+      href={item.href}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 12px', borderRadius: 8, marginBottom: 2,
+        textDecoration: 'none',
+        background: active ? '#E8F8F5' : 'transparent',
+        color: active ? '#00B894' : '#6C757D',
+        fontWeight: active ? 600 : 400,
+        fontSize: 14,
+        transition: 'all 0.15s'
+      }}
+    >
+      <span style={{ fontSize: 16 }}>{item.icon}</span>
+      {item.label}
+    </a>
   )
-}
+})}
