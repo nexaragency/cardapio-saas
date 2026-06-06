@@ -161,12 +161,14 @@ if (mesa) setTableNumber(mesa)
   function getTotalItems() { return cart.reduce((sum, i) => sum + i.qty, 0) }
 
   async function handleSubmitOrder() {
-    if (!form.name.trim()) { alert('Informe seu nome'); return }
-    if (!form.phone.trim()) { alert('Informe seu telefone'); return }
-    if (!form.address.trim()) { alert('Informe seu endereco'); return }
-    if (!form.neighborhood.trim()) { alert('Informe seu bairro'); return }
-    if (neighborhoodError) { alert('Bairro fora da area de entrega'); return }
-    if (deliveryFee === null) { alert('Informe um bairro valido'); return }
+    if (!tableNumber) {
+      if (!form.name.trim()) { alert('Informe seu nome'); return }
+      if (!form.phone.trim()) { alert('Informe seu telefone'); return }
+      if (!form.address.trim()) { alert('Informe seu endereco'); return }
+      if (!form.neighborhood.trim()) { alert('Informe seu bairro'); return }
+      if (neighborhoodError) { alert('Bairro fora da area de entrega'); return }
+      if (deliveryFee === null) { alert('Informe um bairro valido'); return }
+    }
 
     setSubmitting(true)
 
@@ -246,7 +248,17 @@ order_type: tableNumber ? 'salao' : 'delivery'
         <div style={{ background: '#00B894', padding: '28px 20px 20px', textAlign: 'center' }}>
           <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>{tenant.name}</h1>
           <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>
-            {tableNumber ? 'Mesa ' + tableNumber + ' — ' : ''}Pedido #{currentOrder.id.slice(-6).toUpperCase()}
+            {tableNumber ? (
+  <>
+    <button
+      onClick={handleSubmitOrder}
+      disabled={submitting}
+      style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}
+    >
+      {submitting ? 'Enviando pedido...' : 'Confirmar pedido — R$ ' + getSubtotal().toFixed(2)}
+    </button>
+  </>
+) : (
           </p>
         </div>
 
