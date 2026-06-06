@@ -188,6 +188,7 @@ ${order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : '
                     </div>
                   </div>
                   <div>
+  <div>
   <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>
     {order.order_type === 'salao' ? 'MESA' : 'PAGAMENTO'}
   </div>
@@ -195,9 +196,9 @@ ${order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : '
     {order.order_type === 'salao'
       ? 'Mesa ' + order.table_number + ' — Pagamento no salao'
       : PAYMENT_LABEL[order.payment_method] || order.payment_method}
-    {order.order_type !== 'salao' && order.change_for && (
-      <><br />{'Troco para R$ ' + Number(order.change_for).toFixed(2)}</>
-    )}
+    {order.order_type !== 'salao' && order.change_for
+      ? ' — Troco para R$ ' + Number(order.change_for).toFixed(2)
+      : ''}
   </div>
 </div>
 
