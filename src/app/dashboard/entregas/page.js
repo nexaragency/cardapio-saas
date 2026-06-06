@@ -12,6 +12,8 @@ export default function Entregas() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ neighborhood: '', fee: '' })
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ neighborhood: '', fee: '' })
 
   useEffect(() => {
     async function loadData() {
@@ -47,6 +49,20 @@ export default function Entregas() {
     if (error) { setError('Erro ao salvar: ' + error.message) }
     else { setForm({ neighborhood: '', fee: '' }); loadZones(tenantId) }
     setSaving(false)
+  }
+
+  function handleEditStart(zone) {
+    setEditingId(zone.id)
+    setEditForm({ neighborhood: zone.neighborhood, fee: zone.fee })
+  }
+
+  async function handleEditSave(id) {
+    if (!editForm.neighborhood.trim() || editForm.fee === '') return
+    const { error } = await supabase.from('delivery_zones').update({
+      neighborhood: editForm.neighborhood,
+      fee: parseFloat(editForm.fee)
+    }).eq('id', id)
+    if (!error) { setEditingId(null); loadZones(tenantId) }
   }
 
   async function handleToggle(zone) {
@@ -114,43 +130,75 @@ export default function Entregas() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {zones.map(zone => (
           <div key={zone.id} style={{
-            background: '#fff', border: '1px solid #E9ECEF',
-            borderRadius: 12, padding: '14px 20px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            background: '#fff', border: editingId === zone.id ? '1px solid #00B894' : '1px solid #E9ECEF',
+            borderRadius: 12, padding: '14px 20px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: zone.active ? '#00B894' : '#dee2e6'
-              }} />
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14, color: zone.active ? '#1A1A2E' : '#adb5bd' }}>
-                  {zone.neighborhood}
+            {editingId === zone.id ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: 10, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={editForm.neighborhood}
+                  onChange={e => setEditForm({ ...editForm, neighborhood: e.target.value })}
+                  style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none' }}
+                />
+                <input
+                  type="number"
+                  value={editForm.fee}
+                  onChange={e => setEditForm({ ...editForm, fee: e.target.value })}
+                  style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', width: 100 }}
+                />
+                <button
+                  onClick={() => handleEditSave(zone.id)}
+                  style={{ padding: '8px 16px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+                >
+                  Salvar
+                </button>
+                <button
+                  onClick={() => setEditingId(null)}
+                  style={{ padding: '8px 16px', background: '#F8F9FA', color: '#6C757D', border: '1px solid #E9ECEF', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: zone.active ? '#00B894' : '#dee2e6' }} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: zone.active ? '#1A1A2E' : '#adb5bd' }}>
+                      {zone.neighborhood}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#00B894', fontWeight: 700, marginTop: 2 }}>
+                      {zone.fee === 0 ? 'Gratis' : 'R$ ' + Number(zone.fee).toFixed(2)}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: '#00B894', fontWeight: 700, marginTop: 2 }}>
-                  {zone.fee === 0 ? 'Gratis' : 'R$ ' + Number(zone.fee).toFixed(2)}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => handleEditStart(zone)}
+                    style={{ padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: '#F0F4FF', color: '#4A6CF7' }}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleToggle(zone)}
+                    style={{
+                      padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                      background: zone.active ? '#E8F8F5' : '#F8F9FA',
+                      color: zone.active ? '#00B894' : '#6C757D'
+                    }}
+                  >
+                    {zone.active ? 'Ativo' : 'Inativo'}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(zone.id)}
+                    style={{ padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: '#FFF5F5', color: '#e53935' }}
+                  >
+                    Excluir
+                  </button>
                 </div>
               </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => handleToggle(zone)}
-                style={{
-                  padding: '6px 14px', borderRadius: 6, border: 'none',
-                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: zone.active ? '#E8F8F5' : '#F8F9FA',
-                  color: zone.active ? '#00B894' : '#6C757D'
-                }}
-              >
-                {zone.active ? 'Ativo' : 'Inativo'}
-              </button>
-              <button
-                onClick={() => handleDelete(zone.id)}
-                style={{ padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: '#FFF5F5', color: '#e53935' }}
-              >
-                Excluir
-              </button>
-            </div>
+            )}
           </div>
         ))}
       </div>
