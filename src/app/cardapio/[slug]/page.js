@@ -21,6 +21,7 @@ const STATUS_DESC = {
 
 export default function CardapioPublico({ params }) {
   const { slug } = use(params)
+  const [tableNumber, setTableNumber] = useState(null)
   const [tenant, setTenant] = useState(null)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
@@ -73,6 +74,9 @@ export default function CardapioPublico({ params }) {
       }
 
       setLoading(false)
+      const urlParams = new URLSearchParams(window.location.search)
+const mesa = urlParams.get('mesa')
+if (mesa) setTableNumber(mesa)
     }
     loadData()
   }, [slug])
@@ -178,7 +182,9 @@ export default function CardapioPublico({ params }) {
         change_for: form.change_for ? parseFloat(form.change_for) : null,
         delivery_fee: deliveryFee || 0,
         total: getTotal(),
-        status: 'novo'
+        status: 'novo',
+table_number: tableNumber ? parseInt(tableNumber) : null,
+order_type: tableNumber ? 'salao' : 'delivery'
       }).select().single()
 
     if (orderError) { alert('Erro ao fazer pedido. Tente novamente.'); setSubmitting(false); return }
@@ -240,7 +246,7 @@ export default function CardapioPublico({ params }) {
         <div style={{ background: '#00B894', padding: '28px 20px 20px', textAlign: 'center' }}>
           <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>{tenant.name}</h1>
           <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>
-            Pedido #{currentOrder.id.slice(-6).toUpperCase()}
+            {tableNumber ? 'Mesa ' + tableNumber + ' — ' : ''}Pedido #{currentOrder.id.slice(-6).toUpperCase()}
           </p>
         </div>
 
