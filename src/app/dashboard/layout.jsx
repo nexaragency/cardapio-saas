@@ -28,13 +28,20 @@ export default function DashboardLayout({ children }) {
     router.push('/login')
   }
 
-  const links = [
-    { href: '/dashboard', label: 'Inicio' },
-    { href: '/dashboard/produtos', label: 'Produtos' },
-    { href: '/dashboard/categorias', label: 'Categorias' },
-    { href: '/dashboard/pedidos', label: 'Pedidos' },
-    { href: '/dashboard/relatorios', label: 'Relatorios' },
-  ]
+  function linkStyle(href) {
+    const active = pathname === href
+    return {
+      display: 'block',
+      padding: '10px 12px',
+      borderRadius: 8,
+      marginBottom: 2,
+      textDecoration: 'none',
+      background: active ? '#E8F8F5' : 'transparent',
+      color: active ? '#00B894' : '#6C757D',
+      fontWeight: active ? 600 : 400,
+      fontSize: 14
+    }
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F8F9FA', fontFamily: 'Segoe UI, sans-serif' }}>
@@ -75,26 +82,11 @@ export default function DashboardLayout({ children }) {
         )}
 
         <nav style={{ flex: 1, padding: '12px' }}>
-          {links.map((link) => (
-            
-              key={link.href}
-              href={link.href}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '10px 12px',
-                borderRadius: 8,
-                marginBottom: 2,
-                textDecoration: 'none',
-                background: pathname === link.href ? '#E8F8F5' : 'transparent',
-                color: pathname === link.href ? '#00B894' : '#6C757D',
-                fontWeight: pathname === link.href ? 600 : 400,
-                fontSize: 14
-              }}
-            >
-              {link.label}
-            </a>
-          ))}
+          <a href="/dashboard" style={linkStyle('/dashboard')}>Inicio</a>
+          <a href="/dashboard/produtos" style={linkStyle('/dashboard/produtos')}>Produtos</a>
+          <a href="/dashboard/categorias" style={linkStyle('/dashboard/categorias')}>Categorias</a>
+          <a href="/dashboard/pedidos" style={linkStyle('/dashboard/pedidos')}>Pedidos</a>
+          <a href="/dashboard/relatorios" style={linkStyle('/dashboard/relatorios')}>Relatorios</a>
         </nav>
 
         <div style={{ padding: '16px 12px', borderTop: '1px solid #E9ECEF' }}>
