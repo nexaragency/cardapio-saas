@@ -8,12 +8,18 @@ export default function CardapioPublico({ params }) {
   const [tenant, setTenant] = useState(null)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
+  const [zones, setZones] = useState([])
   const [cart, setCart] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState(null)
-  const [showCart, setShowCart] = useState(false)
-  const [customerName, setCustomerName] = useState('')
-  const [customerPhone, setCustomerPhone] = useState('')
+  const [step, setStep] = useState('menu')
+  const [submitting, setSubmitting] = useState(false)
+  const [orderDone, setOrderDone] = useState(false)
+  const [form, setForm] = useState({
+    name: '', phone: '', address: '', neighborhood: '', city: '', payment_method: 'dinheiro', change_for: ''
+  })
+  const [deliveryFee, setDeliveryFee] = useState(null)
+  const [neighborhoodError, setNeighborhoodError] = useState('')
 
   useEffect(() => {
     async function loadData() {
@@ -33,17 +39,54 @@ export default function CardapioPublico({ params }) {
         .eq('tenant_id', tenantData.id).eq('active', true).order('position')
       setProducts(prods || [])
 
+      const { data: zns } = await supabase
+        .from('delivery_zones').select('*')
+        .eq('tenant_id', tenantData.id).eq('active', true)
+      setZones(zns || [])
+
       setLoading(false)
     }
     loadData()
   }, [slug])
 
+  async function lookupCustomer(phone) {
+    if (!phone || phone.length < 8) return
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('tenant_id', tenant.id)
+      .eq('phone', phone)
+      .single()
+    if (data) {
+      setForm(prev => ({
+        ...prev,
+        name: data.name || prev.name,
+        address: data.address || prev.address,
+        neighborhood: data.neighborhood || prev.neighborhood,
+        city: data.city || prev.city
+      }))
+      if (data.neighborhood) {
+        checkDeliveryFee(data.neighborhood)
+      }
+    }
+  }
+
+  function checkDeliveryFee(neighborhood) {
+    if (!neighborhood.trim()) { setDeliveryFee(null); setNeighborhoodError(''); return }
+    const zone = zones.find(z => z.neighborhood.toLowerCase().trim() === neighborhood.toLowerCase().trim())
+    if (zone) {
+      setDeliveryFee(zone.fee)
+      setNeighborhoodError('')
+    } else {
+      setDeliveryFee(null)
+      setNeighborhoodError('Bairro fora da area de entrega')
+    }
+  }
+
   function addToCart(product) {
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id)
-      if (existing) {
-        return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
-      }
+      if (existing) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
       return [...prev, { ...product, qty: 1 }]
     })
   }
@@ -56,24 +99,62 @@ export default function CardapioPublico({ params }) {
     })
   }
 
-  function getQty(id) {
-    return cart.find(i => i.id === id)?.qty || 0
-  }
+  function getQty(id) { return cart.find(i => i.id === id)?.qty || 0 }
+  function getSubtotal() { return cart.reduce((sum, i) => sum + (i.price * i.qty), 0) }
+  function getTotal() { return getSubtotal() + (deliveryFee || 0) }
+  function getTotalItems() { return cart.reduce((sum, i) => sum + i.qty, 0) }
 
-  function getTotal() {
-    return cart.reduce((sum, i) => sum + (i.price * i.qty), 0)
-  }
+  async function handleSubmitOrder() {
+    if (!form.name.trim()) { alert('Informe seu nome'); return }
+    if (!form.phone.trim()) { alert('Informe seu telefone'); return }
+    if (!form.address.trim()) { alert('Informe seu endereco'); return }
+    if (!form.neighborhood.trim()) { alert('Informe seu bairro'); return }
+    if (neighborhoodError) { alert('Bairro fora da area de entrega'); return }
+    if (deliveryFee === null) { alert('Informe um bairro valido'); return }
 
-  function getTotalItems() {
-    return cart.reduce((sum, i) => sum + i.qty, 0)
-  }
+    setSubmitting(true)
 
-  function sendWhatsApp() {
-    if (!customerName.trim()) { alert('Por favor, informe seu nome.'); return }
-    const lines = cart.map(i => i.qty + 'x ' + i.name + ' - R$ ' + (i.price * i.qty).toFixed(2))
-    const msg = 'Ola! Meu nome e ' + customerName + '.\n\nPedido:\n' + lines.join('\n') + '\n\nTotal: R$ ' + getTotal().toFixed(2)
-    const phone = tenant.phone ? '55' + tenant.phone.replace(/\D/g, '') : ''
-    window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank')
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        tenant_id: tenant.id,
+        customer_name: form.name,
+        customer_phone: form.phone,
+        customer_address: form.address,
+        neighborhood: form.neighborhood,
+        city: form.city,
+        payment_method: form.payment_method,
+        change_for: form.change_for ? parseFloat(form.change_for) : null,
+        delivery_fee: deliveryFee || 0,
+        total: getTotal(),
+        status: 'novo'
+      })
+      .select().single()
+
+    if (orderError) { alert('Erro ao fazer pedido. Tente novamente.'); setSubmitting(false); return }
+
+    const items = cart.map(i => ({
+      order_id: order.id,
+      product_id: i.id,
+      product_name: i.name,
+      quantity: i.qty,
+      unit_price: i.price,
+      subtotal: i.price * i.qty
+    }))
+
+    await supabase.from('order_items').insert(items)
+
+    await supabase.from('customers').upsert({
+      tenant_id: tenant.id,
+      name: form.name,
+      phone: form.phone,
+      address: form.address,
+      neighborhood: form.neighborhood,
+      city: form.city
+    }, { onConflict: 'tenant_id,phone' })
+
+    setOrderDone(true)
+    setSubmitting(false)
   }
 
   const filteredProducts = activeCategory
@@ -92,6 +173,22 @@ export default function CardapioPublico({ params }) {
     </div>
   )
 
+  if (orderDone) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F8F9FA', padding: 24 }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: 40, textAlign: 'center', maxWidth: 400, width: '100%', border: '1px solid #E9ECEF' }}>
+        <div style={{ width: 64, height: 64, background: '#E8F8F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 28 }}>✓</div>
+        <h2 style={{ color: '#1A1A2E', fontSize: 20, fontWeight: 700, margin: '0 0 10px' }}>Pedido realizado!</h2>
+        <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 24px' }}>Seu pedido foi recebido e esta sendo preparado.</p>
+        <button
+          onClick={() => { setCart([]); setOrderDone(false); setStep('menu'); setForm({ name: '', phone: '', address: '', neighborhood: '', city: '', payment_method: 'dinheiro', change_for: '' }) }}
+          style={{ padding: '12px 28px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+        >
+          Fazer novo pedido
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif', paddingBottom: 100 }}>
 
@@ -104,155 +201,189 @@ export default function CardapioPublico({ params }) {
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>Cardapio Digital</p>
       </div>
 
-      {/* CATEGORIAS */}
-      {categories.length > 0 && (
-        <div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '0 16px', display: 'flex', gap: 4, overflowX: 'auto', position: 'sticky', top: 0, zIndex: 10 }}>
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              style={{
-                padding: '14px 16px', border: 'none', background: 'transparent',
-                cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-                color: activeCategory === cat.id ? '#00B894' : '#6C757D',
-                borderBottom: activeCategory === cat.id ? '2px solid #00B894' : '2px solid transparent'
-              }}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* PRODUTOS */}
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px' }}>
-        {filteredProducts.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6C757D' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🍽️</div>
-            <div>Nenhum produto nesta categoria</div>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filteredProducts.map(product => {
-            const qty = getQty(product.id)
-            return (
-              <div key={product.id} style={{
-                background: '#fff', borderRadius: 12,
-                border: '1px solid #E9ECEF',
-                display: 'flex', justifyContent: 'space-between',
-                alignItems: 'center', padding: '14px 16px', gap: 12
-              }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
-                  {product.description && (
-                    <div style={{ fontSize: 12, color: '#6C757D', marginBottom: 6 }}>{product.description}</div>
-                  )}
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#00B894' }}>
-                    {'R$ ' + Number(product.price).toFixed(2)}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  {product.image_url && (
-                    <img src={product.image_url} alt={product.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10 }} />
-                  )}
-                  {qty === 0 ? (
-                    <button
-                      onClick={() => addToCart(product)}
-                      style={{ padding: '6px 16px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
-                    >
-                      Adicionar
-                    </button>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <button onClick={() => removeFromCart(product.id)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
-                      <span style={{ fontWeight: 700, fontSize: 14, color: '#1A1A2E' }}>{qty}</span>
-                      <button onClick={() => addToCart(product)} style={{ width: 28, height: 28, borderRadius: '50%', background: '#00B894', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* BOTAO CARRINHO */}
-      {cart.length > 0 && !showCart && (
-        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
-          <button
-            onClick={() => setShowCart(true)}
-            style={{
-              background: '#00B894', color: '#fff', border: 'none',
-              borderRadius: 30, padding: '14px 32px', cursor: 'pointer',
-              fontSize: 14, fontWeight: 700, boxShadow: '0 4px 20px rgba(0,184,148,0.4)',
-              display: 'flex', alignItems: 'center', gap: 10
-            }}
-          >
-            <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
-              {getTotalItems()}
-            </span>
-            Ver pedido — R$ {getTotal().toFixed(2)}
-          </button>
-        </div>
-      )}
-
-      {/* CARRINHO */}
-      {showCart && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}>
-          <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', width: '100%', maxHeight: '80vh', overflowY: 'auto', padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1A1A2E' }}>Seu Pedido</h2>
-              <button onClick={() => setShowCart(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#6C757D' }}>x</button>
+      {step === 'menu' && (
+        <>
+          {categories.length > 0 && (
+            <div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '0 16px', display: 'flex', gap: 4, overflowX: 'auto', position: 'sticky', top: 0, zIndex: 10 }}>
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  style={{
+                    padding: '14px 16px', border: 'none', background: 'transparent',
+                    cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
+                    color: activeCategory === cat.id ? '#00B894' : '#6C757D',
+                    borderBottom: activeCategory === cat.id ? '2px solid #00B894' : '2px solid transparent'
+                  }}
+                >
+                  {cat.name}
+                </button>
+              ))}
             </div>
+          )}
 
+          <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px' }}>
+            {filteredProducts.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: '#6C757D' }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>🍽️</div>
+                <div>Nenhum produto nesta categoria</div>
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {filteredProducts.map(product => {
+                const qty = getQty(product.id)
+                return (
+                  <div key={product.id} style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9ECEF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
+                      {product.description && <div style={{ fontSize: 12, color: '#6C757D', marginBottom: 6 }}>{product.description}</div>}
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#00B894' }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      {product.image_url && <img src={product.image_url} alt={product.name} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10 }} />}
+                      {qty === 0 ? (
+                        <button onClick={() => addToCart(product)} style={{ padding: '6px 16px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Adicionar</button>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <button onClick={() => removeFromCart(product.id)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 16 }}>-</button>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: '#1A1A2E' }}>{qty}</span>
+                          <button onClick={() => addToCart(product)} style={{ width: 28, height: 28, borderRadius: '50%', background: '#00B894', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}>+</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {cart.length > 0 && (
+            <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
+              <button
+                onClick={() => setStep('checkout')}
+                style={{ background: '#00B894', color: '#fff', border: 'none', borderRadius: 30, padding: '14px 32px', cursor: 'pointer', fontSize: 14, fontWeight: 700, boxShadow: '0 4px 20px rgba(0,184,148,0.4)', display: 'flex', alignItems: 'center', gap: 10 }}
+              >
+                <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>{getTotalItems()}</span>
+                Ver pedido — R$ {getSubtotal().toFixed(2)}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {step === 'checkout' && (
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 16px' }}>
+          <button onClick={() => setStep('menu')} style={{ background: 'none', border: 'none', color: '#6C757D', cursor: 'pointer', fontSize: 14, marginBottom: 20, padding: 0 }}>
+            Voltar ao cardapio
+          </button>
+
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>RESUMO DO PEDIDO</div>
             {cart.map(item => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #E9ECEF' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: '#1A1A2E' }}>{item.name}</div>
-                  <div style={{ fontSize: 13, color: '#6C757D', marginTop: 2 }}>{'R$ ' + Number(item.price).toFixed(2) + ' cada'}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button onClick={() => removeFromCart(item.id)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 16 }}>-</button>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{item.qty}</span>
-                  <button onClick={() => addToCart(item)} style={{ width: 28, height: 28, borderRadius: '50%', background: '#00B894', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}>+</button>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: '#00B894', minWidth: 70, textAlign: 'right' }}>{'R$ ' + (item.price * item.qty).toFixed(2)}</span>
-                </div>
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F8F9FA' }}>
+                <span style={{ fontSize: 14, color: '#1A1A2E' }}>{item.qty}x {item.name}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>R$ {(item.price * item.qty).toFixed(2)}</span>
               </div>
             ))}
-
-            <div style={{ padding: '16px 0', borderBottom: '1px solid #E9ECEF', marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 16, color: '#1A1A2E' }}>
-                <span>Total</span>
-                <span style={{ color: '#00B894' }}>{'R$ ' + getTotal().toFixed(2)}</span>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+              <span style={{ fontSize: 14, color: '#6C757D' }}>Subtotal</span>
+              <span style={{ fontSize: 14, color: '#1A1A2E' }}>R$ {getSubtotal().toFixed(2)}</span>
             </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <input
-  type="text"
-  placeholder="Seu nome *"
-  value={customerName}
-  onChange={e => setCustomerName(e.target.value)}
-  style={{ display: 'block', width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 10, color: '#1A1A2E' }}
-/>
-<input
-  type="tel"
-  placeholder="Seu telefone (opcional)"
-  value={customerPhone}
-  onChange={e => setCustomerPhone(e.target.value)}
-  style={{ display: 'block', width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, outline: 'none', boxSizing: 'border-box', color: '#1A1A2E' }}
-/>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+              <span style={{ fontSize: 14, color: '#6C757D' }}>Taxa de entrega</span>
+              <span style={{ fontSize: 14, color: deliveryFee !== null ? '#1A1A2E' : '#adb5bd' }}>
+                {deliveryFee !== null ? (deliveryFee === 0 ? 'Gratis' : 'R$ ' + deliveryFee.toFixed(2)) : '--'}
+              </span>
             </div>
-
-            <button
-              onClick={sendWhatsApp}
-              style={{ width: '100%', padding: '14px', background: '#25D366', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}
-            >
-              Enviar pedido pelo WhatsApp
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', borderTop: '1px solid #E9ECEF', marginTop: 4 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#1A1A2E' }}>Total</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#00B894' }}>R$ {getTotal().toFixed(2)}</span>
+            </div>
           </div>
+
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEUS DADOS</div>
+
+            <input
+              type="tel"
+              placeholder="Telefone (para identificar seu cadastro)"
+              value={form.phone}
+              onChange={e => setForm({ ...form, phone: e.target.value })}
+              onBlur={e => lookupCustomer(e.target.value)}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+            />
+            <input
+              type="text"
+              placeholder="Seu nome *"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+            />
+            <input
+              type="text"
+              placeholder="Endereco (rua e numero) *"
+              value={form.address}
+              onChange={e => setForm({ ...form, address: e.target.value })}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+            />
+            <input
+              type="text"
+              placeholder="Bairro *"
+              value={form.neighborhood}
+              onChange={e => { setForm({ ...form, neighborhood: e.target.value }); checkDeliveryFee(e.target.value) }}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: neighborhoodError ? '1px solid #e53935' : '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 4 }}
+            />
+            {neighborhoodError && <p style={{ color: '#e53935', fontSize: 12, margin: '0 0 10px' }}>{neighborhoodError}</p>}
+            {deliveryFee !== null && !neighborhoodError && (
+              <p style={{ color: '#00B894', fontSize: 12, margin: '0 0 10px', fontWeight: 600 }}>
+                {deliveryFee === 0 ? 'Entrega gratis neste bairro!' : 'Taxa de entrega: R$ ' + deliveryFee.toFixed(2)}
+              </p>
+            )}
+            <input
+              type="text"
+              placeholder="Cidade"
+              value={form.city}
+              onChange={e => setForm({ ...form, city: e.target.value })}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>FORMA DE PAGAMENTO</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+              {['dinheiro', 'pix', 'debito', 'credito'].map(method => (
+                <button
+                  key={method}
+                  onClick={() => setForm({ ...form, payment_method: method })}
+                  style={{
+                    padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                    border: form.payment_method === method ? '2px solid #00B894' : '1px solid #E9ECEF',
+                    background: form.payment_method === method ? '#E8F8F5' : '#fff',
+                    color: form.payment_method === method ? '#00B894' : '#6C757D'
+                  }}
+                >
+                  {method === 'dinheiro' ? 'Dinheiro' : method === 'pix' ? 'Pix' : method === 'debito' ? 'Cartao Debito' : 'Cartao Credito'}
+                </button>
+              ))}
+            </div>
+            {form.payment_method === 'dinheiro' && (
+              <input
+                type="number"
+                placeholder="Troco para quanto? (opcional)"
+                value={form.change_for}
+                onChange={e => setForm({ ...form, change_for: e.target.value })}
+                style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
+              />
+            )}
+          </div>
+
+          <button
+            onClick={handleSubmitOrder}
+            disabled={submitting}
+            style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}
+          >
+            {submitting ? 'Enviando pedido...' : 'Confirmar pedido — R$ ' + getTotal().toFixed(2)}
+          </button>
         </div>
       )}
     </div>
