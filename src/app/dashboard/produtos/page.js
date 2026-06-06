@@ -14,6 +14,8 @@ export default function Produtos() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
   const [form, setForm] = useState({ name: '', description: '', price: '', category_id: '', image_url: '' })
 
   useEffect(() => {
@@ -44,6 +46,24 @@ export default function Produtos() {
     setCategories(data || [])
   }
 
+  function handleImageChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  async function uploadImage(file) {
+    const ext = file.name.split('.').pop()
+    const filename = Date.now() + '.' + ext
+    const { error } = await supabase.storage
+      .from('produtos')
+      .upload(filename, file, { upsert: true })
+    if (error) return null
+    const { data } = supabase.storage.from('produtos').getPublicUrl(filename)
+    return data.publicUrl
+  }
+
   function handleEdit(product) {
     setEditingId(product.id)
     setForm({
@@ -53,6 +73,8 @@ export default function Produtos() {
       category_id: product.category_id || '',
       image_url: product.image_url || ''
     })
+    setImagePreview(product.image_url || null)
+    setImageFile(null)
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -60,6 +82,8 @@ export default function Produtos() {
   function handleCancel() {
     setShowForm(false)
     setEditingId(null)
+    setImageFile(null)
+    setImagePreview(null)
     setForm({ name: '', description: '', price: '', category_id: '', image_url: '' })
     setError('')
   }
@@ -69,13 +93,25 @@ export default function Produtos() {
     setSaving(true)
     setError('')
 
+    let imageUrl = form.image_url
+
+    if (imageFile) {
+      const uploaded = await uploadImage(imageFile)
+      if (!uploaded) {
+        setError('Erro ao fazer upload da imagem.')
+        setSaving(false)
+        return
+      }
+      imageUrl = uploaded
+    }
+
     if (editingId) {
       const { error } = await supabase.from('products').update({
         name: form.name,
         description: form.description,
         price: parseFloat(form.price),
         category_id: form.category_id || null,
-        image_url: form.image_url || null,
+        image_url: imageUrl || null,
       }).eq('id', editingId)
       if (error) { setError('Erro ao atualizar: ' + error.message) }
       else { handleCancel(); loadProducts(tenantId) }
@@ -86,7 +122,7 @@ export default function Produtos() {
         description: form.description,
         price: parseFloat(form.price),
         category_id: form.category_id || null,
-        image_url: form.image_url || null,
+        image_url: imageUrl || null,
         position: products.length
       })
       if (error) { setError('Erro ao salvar: ' + error.message) }
@@ -122,7 +158,8 @@ export default function Produtos() {
           <button
             onClick={() => showForm ? handleCancel() : setShowForm(true)}
             style={{
-              padding: '9px 18px', background: showForm ? '#F8F9FA' : '#00B894',
+              padding: '9px 18px',
+              background: showForm ? '#F8F9FA' : '#00B894',
               color: showForm ? '#6C757D' : '#fff',
               border: showForm ? '1px solid #E9ECEF' : 'none',
               borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600
@@ -138,6 +175,7 @@ export default function Produtos() {
           <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>
             {editingId ? 'EDITAR PRODUTO' : 'NOVO PRODUTO'}
           </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <input
               type="text"
@@ -154,32 +192,52 @@ export default function Produtos() {
               style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none' }}
             />
           </div>
+
           <textarea
             placeholder="Descricao do produto"
             value={form.description}
             onChange={e => setForm({ ...form, description: e.target.value })}
             style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', height: 80, resize: 'none', marginBottom: 12, boxSizing: 'border-box' }}
           />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <select
-              value={form.category_id}
-              onChange={e => setForm({ ...form, category_id: e.target.value })}
-              style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none' }}
-            >
-              <option value="">Sem categoria</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="URL da imagem (opcional)"
-              value={form.image_url}
-              onChange={e => setForm({ ...form, image_url: e.target.value })}
-              style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none' }}
-            />
+
+          <select
+            value={form.category_id}
+            onChange={e => setForm({ ...form, category_id: e.target.value })}
+            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', marginBottom: 12 }}
+          >
+            <option value="">Sem categoria</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>FOTO DO PRODUTO</div>
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 14px', borderRadius: 8,
+              border: '2px dashed #E9ECEF', cursor: 'pointer',
+              background: '#F8F9FA'
+            }}>
+              <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+              {imagePreview ? (
+                <img src={imagePreview} alt="preview" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8 }} />
+              ) : (
+                <div style={{ width: 56, height: 56, background: '#E9ECEF', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                  +
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>
+                  {imagePreview ? 'Clique para trocar a foto' : 'Clique para adicionar foto'}
+                </div>
+                <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>JPG, PNG ou WEBP</div>
+              </div>
+            </label>
           </div>
+
           {error && <p style={{ color: '#e53935', fontSize: 13, marginBottom: 12 }}>{error}</p>}
+
           <div style={{ display: 'flex', gap: 10 }}>
             <button
               onClick={handleSave}
@@ -209,7 +267,8 @@ export default function Produtos() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {products.map((product) => (
           <div key={product.id} style={{
-            background: '#fff', border: editingId === product.id ? '1px solid #00B894' : '1px solid #E9ECEF',
+            background: '#fff',
+            border: editingId === product.id ? '1px solid #00B894' : '1px solid #E9ECEF',
             borderRadius: 12, padding: '16px 20px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
@@ -217,7 +276,7 @@ export default function Produtos() {
               {product.image_url ? (
                 <img src={product.image_url} alt={product.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8 }} />
               ) : (
-                <div style={{ width: 48, height: 48, background: '#F8F9FA', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adb5bd', fontSize: 11, fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>
+                <div style={{ width: 48, height: 48, background: '#F8F9FA', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adb5bd', fontSize: 10, fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>
                   SEM FOTO
                 </div>
               )}
@@ -236,19 +295,14 @@ export default function Produtos() {
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => handleEdit(product)}
-                style={{
-                  padding: '6px 14px', borderRadius: 6, border: 'none',
-                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: '#F0F4FF', color: '#4A6CF7'
-                }}
+                style={{ padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: '#F0F4FF', color: '#4A6CF7' }}
               >
                 Editar
               </button>
               <button
                 onClick={() => handleToggle(product)}
                 style={{
-                  padding: '6px 14px', borderRadius: 6, border: 'none',
-                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                  padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
                   background: product.active ? '#E8F8F5' : '#F8F9FA',
                   color: product.active ? '#00B894' : '#6C757D'
                 }}
@@ -257,11 +311,7 @@ export default function Produtos() {
               </button>
               <button
                 onClick={() => handleDelete(product.id)}
-                style={{
-                  padding: '6px 14px', borderRadius: 6, border: 'none',
-                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: '#FFF5F5', color: '#e53935'
-                }}
+                style={{ padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: '#FFF5F5', color: '#e53935' }}
               >
                 Excluir
               </button>
