@@ -87,6 +87,7 @@ export default function DashboardLayout({ children }) {
           <a href="/dashboard/categorias" style={linkStyle('/dashboard/categorias')}>Categorias</a>
           <a href="/dashboard/pedidos" style={linkStyle('/dashboard/pedidos')}>Pedidos</a>
           <a href="/dashboard/relatorios" style={linkStyle('/dashboard/relatorios')}>Relatorios</a>
+<a href="/dashboard/configuracoes" style={linkStyle('/dashboard/configuracoes')}>Configuracoes</a>
         </nav>
 
         <div style={{ padding: '16px 12px', borderTop: '1px solid #E9ECEF' }}>
