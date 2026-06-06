@@ -12,64 +12,78 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
+      if (!user) { router.push('/login'); return }
       const { data: userData } = await supabase
         .from('users')
         .select('*, tenants(*)')
         .eq('id', user.id)
         .single()
-
       if (userData) setTenant(userData.tenants)
       setLoading(false)
     }
-
     loadData()
   }, [])
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
+  if (loading) return <p style={{ padding: 24, color: '#6C757D' }}>Carregando...</p>
 
-  if (loading) return <p style={{ padding: 24 }}>Carregando...</p>
+  const slugUrl = '/cardapio/' + (tenant ? tenant.slug : '')
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Olá, {tenant?.name} 👋</h1>
-        <button
-          onClick={handleLogout}
-          style={{ padding: '8px 16px', background: '#333', color: '#fff', border: 'none', cursor: 'pointer' }}
-        >
-          Sair
-        </button>
+    <div>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>
+          {'Ola, ' + (tenant ? tenant.name : '') + ' !'}
+        </h1>
+        <p style={{ color: '#6C757D', marginTop: 6, fontSize: 14 }}>
+          {'Seu cardapio publico esta em: '}
+          <a href={slugUrl} target="_blank" style={{ color: '#00B894', fontWeight: 600 }}>
+            {slugUrl}
+          </a>
+        </p>
       </div>
 
-      <p style={{ color: '#666' }}>
-        Seu cardápio está em: <strong>/cardapio/{tenant?.slug}</strong>
-      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 32 }}>
+        <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 12, color: '#6C757D', fontWeight: 600, letterSpacing: 1, marginBottom: 8 }}>PRODUTOS ATIVOS</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: '#1A1A2E' }}>-</div>
+        </div>
+        <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 12, color: '#6C757D', fontWeight: 600, letterSpacing: 1, marginBottom: 8 }}>PEDIDOS HOJE</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: '#1A1A2E' }}>-</div>
+        </div>
+        <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 12, color: '#6C757D', fontWeight: 600, letterSpacing: 1, marginBottom: 8 }}>FATURAMENTO HOJE</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: '#1A1A2E' }}>-</div>
+        </div>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 32 }}>
-        <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-          <h3>Produtos</h3>
-          <p>Gerencie seu cardápio</p>
-          <a href="/dashboard/produtos">Acessar →</a>
-        </div>
-        <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-          <h3>Pedidos</h3>
-          <p>Acompanhe em tempo real</p>
-          <a href="/dashboard/pedidos">Acessar →</a>
-        </div>
-        <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-          <h3>Relatórios</h3>
-          <p>Veja seu desempenho</p>
-          <a href="/dashboard/relatorios">Acessar →</a>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+        <a href="/dashboard/produtos" style={{ textDecoration: 'none' }}>
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, cursor: 'pointer' }}>
+            <div style={{ width: 40, height: 40, background: '#E8F8F5', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 16 }}>🍽️</div>
+            <div style={{ fontWeight: 700, color: '#1A1A2E', marginBottom: 6 }}>Produtos</div>
+            <div style={{ fontSize: 13, color: '#6C757D' }}>Gerencie seu cardapio</div>
+            <div style={{ marginTop: 12, fontSize: 13, color: '#00B894', fontWeight: 600 }}>Acessar</div>
+          </div>
+        </a>
+
+        <a href="/dashboard/pedidos" style={{ textDecoration: 'none' }}>
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, cursor: 'pointer' }}>
+            <div style={{ width: 40, height: 40, background: '#E8F8F5', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 16 }}>📋</div>
+            <div style={{ fontWeight: 700, color: '#1A1A2E', marginBottom: 6 }}>Pedidos</div>
+            <div style={{ fontSize: 13, color: '#6C757D' }}>Acompanhe em tempo real</div>
+            <div style={{ marginTop: 12, fontSize: 13, color: '#00B894', fontWeight: 600 }}>Acessar</div>
+          </div>
+        </a>
+
+        <a href="/dashboard/relatorios" style={{ textDecoration: 'none' }}>
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, cursor: 'pointer' }}>
+            <div style={{ width: 40, height: 40, background: '#E8F8F5', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 16 }}>📊</div>
+            <div style={{ fontWeight: 700, color: '#1A1A2E', marginBottom: 6 }}>Relatorios</div>
+            <div style={{ fontSize: 13, color: '#6C757D' }}>Veja seu desempenho</div>
+            <div style={{ marginTop: 12, fontSize: 13, color: '#00B894', fontWeight: 600 }}>Acessar</div>
+          </div>
+        </a>
       </div>
     </div>
   )
