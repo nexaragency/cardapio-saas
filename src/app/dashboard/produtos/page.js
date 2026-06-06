@@ -13,6 +13,7 @@ export default function Produtos() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ name: '', description: '', price: '', category_id: '', image_url: '' })
 
   useEffect(() => {
@@ -43,25 +44,55 @@ export default function Produtos() {
     setCategories(data || [])
   }
 
+  function handleEdit(product) {
+    setEditingId(product.id)
+    setForm({
+      name: product.name,
+      description: product.description || '',
+      price: product.price,
+      category_id: product.category_id || '',
+      image_url: product.image_url || ''
+    })
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleCancel() {
+    setShowForm(false)
+    setEditingId(null)
+    setForm({ name: '', description: '', price: '', category_id: '', image_url: '' })
+    setError('')
+  }
+
   async function handleSave() {
     if (!form.name.trim() || !form.price) return
     setSaving(true)
     setError('')
-    const { error } = await supabase.from('products').insert({
-      tenant_id: tenantId,
-      name: form.name,
-      description: form.description,
-      price: parseFloat(form.price),
-      category_id: form.category_id || null,
-      image_url: form.image_url || null,
-      position: products.length
-    })
-    if (error) { setError('Erro ao salvar: ' + error.message) }
-    else {
-      setForm({ name: '', description: '', price: '', category_id: '', image_url: '' })
-      setShowForm(false)
-      loadProducts(tenantId)
+
+    if (editingId) {
+      const { error } = await supabase.from('products').update({
+        name: form.name,
+        description: form.description,
+        price: parseFloat(form.price),
+        category_id: form.category_id || null,
+        image_url: form.image_url || null,
+      }).eq('id', editingId)
+      if (error) { setError('Erro ao atualizar: ' + error.message) }
+      else { handleCancel(); loadProducts(tenantId) }
+    } else {
+      const { error } = await supabase.from('products').insert({
+        tenant_id: tenantId,
+        name: form.name,
+        description: form.description,
+        price: parseFloat(form.price),
+        category_id: form.category_id || null,
+        image_url: form.image_url || null,
+        position: products.length
+      })
+      if (error) { setError('Erro ao salvar: ' + error.message) }
+      else { handleCancel(); loadProducts(tenantId) }
     }
+
     setSaving(false)
   }
 
@@ -89,11 +120,12 @@ export default function Produtos() {
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <a href="/dashboard/categorias" style={{ fontSize: 13, color: '#6C757D', textDecoration: 'none' }}>Categorias</a>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => showForm ? handleCancel() : setShowForm(true)}
             style={{
-              padding: '9px 18px', background: '#00B894', color: '#fff',
-              border: 'none', borderRadius: 8, cursor: 'pointer',
-              fontSize: 13, fontWeight: 600
+              padding: '9px 18px', background: showForm ? '#F8F9FA' : '#00B894',
+              color: showForm ? '#6C757D' : '#fff',
+              border: showForm ? '1px solid #E9ECEF' : 'none',
+              borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600
             }}
           >
             {showForm ? 'Cancelar' : '+ Novo Produto'}
@@ -103,7 +135,9 @@ export default function Produtos() {
 
       {showForm && (
         <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>NOVO PRODUTO</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>
+            {editingId ? 'EDITAR PRODUTO' : 'NOVO PRODUTO'}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <input
               type="text"
@@ -146,13 +180,21 @@ export default function Produtos() {
             />
           </div>
           {error && <p style={{ color: '#e53935', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{ padding: '10px 24px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
-          >
-            {saving ? 'Salvando...' : 'Salvar Produto'}
-          </button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{ padding: '10px 24px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+            >
+              {saving ? 'Salvando...' : editingId ? 'Atualizar Produto' : 'Salvar Produto'}
+            </button>
+            <button
+              onClick={handleCancel}
+              style={{ padding: '10px 24px', background: '#F8F9FA', color: '#6C757D', border: '1px solid #E9ECEF', borderRadius: 8, cursor: 'pointer', fontSize: 14 }}
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
 
@@ -167,7 +209,7 @@ export default function Produtos() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {products.map((product) => (
           <div key={product.id} style={{
-            background: '#fff', border: '1px solid #E9ECEF',
+            background: '#fff', border: editingId === product.id ? '1px solid #00B894' : '1px solid #E9ECEF',
             borderRadius: 12, padding: '16px 20px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
@@ -175,8 +217,8 @@ export default function Produtos() {
               {product.image_url ? (
                 <img src={product.image_url} alt={product.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8 }} />
               ) : (
-                <div style={{ width: 48, height: 48, background: '#F8F9FA', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                  🍽️
+                <div style={{ width: 48, height: 48, background: '#F8F9FA', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adb5bd', fontSize: 11, fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>
+                  SEM FOTO
                 </div>
               )}
               <div>
@@ -192,6 +234,16 @@ export default function Produtos() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => handleEdit(product)}
+                style={{
+                  padding: '6px 14px', borderRadius: 6, border: 'none',
+                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                  background: '#F0F4FF', color: '#4A6CF7'
+                }}
+              >
+                Editar
+              </button>
               <button
                 onClick={() => handleToggle(product)}
                 style={{
