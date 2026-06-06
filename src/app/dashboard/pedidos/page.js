@@ -160,7 +160,7 @@ ${order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : '
                   {'#' + order.id.slice(-6).toUpperCase() + ' — ' + order.customer_name}
                 </div>
                 <div style={{ fontSize: 12, color: '#6C757D', marginTop: 3 }}>
-                  {new Date(order.created_at).toLocaleString('pt-BR') + ' · ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
+                  {new Date(order.created_at).toLocaleString('pt-BR') + (order.order_type === 'salao' ? ' · Mesa ' + order.table_number : ' · ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method))}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -188,13 +188,18 @@ ${order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : '
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>PAGAMENTO</div>
-                    <div style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>
-                      {PAYMENT_LABEL[order.payment_method] || order.payment_method}
-                      {order.change_for && <><br />{'Troco para R$ ' + Number(order.change_for).toFixed(2)}</>}
-                    </div>
-                  </div>
-                </div>
+  <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>
+    {order.order_type === 'salao' ? 'MESA' : 'PAGAMENTO'}
+  </div>
+  <div style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>
+    {order.order_type === 'salao'
+      ? 'Mesa ' + order.table_number + ' — Pagamento no salao'
+      : PAYMENT_LABEL[order.payment_method] || order.payment_method}
+    {order.order_type !== 'salao' && order.change_for && (
+      <><br />{'Troco para R$ ' + Number(order.change_for).toFixed(2)}</>
+    )}
+  </div>
+</div>
 
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>ITENS</div>
