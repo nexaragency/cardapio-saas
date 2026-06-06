@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function CardapioPublico({ params }) {
-  const { slug } = params
+  const { slug } = use(params)
   const [tenant, setTenant] = useState(null)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
