@@ -4,38 +4,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter, usePathname } from 'next/navigation'
 
-const navItems = [
-  { href: '/dashboard', label: 'Inicio', icon: '⊞' },
-  { href: '/dashboard/produtos', label: 'Produtos', icon: '☰' },
-  { href: '/dashboard/categorias', label: 'Categorias', icon: '◈' },
-  { href: '/dashboard/pedidos', label: 'Pedidos', icon: '◎' },
-  { href: '/dashboard/relatorios', label: 'Relatorios', icon: '▦' },
-]
-
-function NavItem({ item, active }) {
-  return (
-    
-      href={item.href}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '10px 12px',
-        borderRadius: 8,
-        marginBottom: 2,
-        textDecoration: 'none',
-        background: active ? '#E8F8F5' : 'transparent',
-        color: active ? '#00B894' : '#6C757D',
-        fontWeight: active ? 600 : 400,
-        fontSize: 14
-      }}
-    >
-      <span style={{ fontSize: 16 }}>{item.icon}</span>
-      {item.label}
-    </a>
-  )
-}
-
 export default function DashboardLayout({ children }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -60,8 +28,16 @@ export default function DashboardLayout({ children }) {
     router.push('/login')
   }
 
+  const links = [
+    { href: '/dashboard', label: 'Inicio' },
+    { href: '/dashboard/produtos', label: 'Produtos' },
+    { href: '/dashboard/categorias', label: 'Categorias' },
+    { href: '/dashboard/pedidos', label: 'Pedidos' },
+    { href: '/dashboard/relatorios', label: 'Relatorios' },
+  ]
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F8F9FA', fontFamily: "'Segoe UI', sans-serif" }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#F8F9FA', fontFamily: 'Segoe UI, sans-serif' }}>
       <aside style={{
         width: 240,
         background: '#FFFFFF',
@@ -98,12 +74,27 @@ export default function DashboardLayout({ children }) {
           </div>
         )}
 
-        <nav style={{ flex: 1, padding: '12px 12px' }}>
-          <NavItem item={navItems[0]} active={pathname === navItems[0].href} />
-          <NavItem item={navItems[1]} active={pathname === navItems[1].href} />
-          <NavItem item={navItems[2]} active={pathname === navItems[2].href} />
-          <NavItem item={navItems[3]} active={pathname === navItems[3].href} />
-          <NavItem item={navItems[4]} active={pathname === navItems[4].href} />
+        <nav style={{ flex: 1, padding: '12px' }}>
+          {links.map((link) => (
+            
+              key={link.href}
+              href={link.href}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '10px 12px',
+                borderRadius: 8,
+                marginBottom: 2,
+                textDecoration: 'none',
+                background: pathname === link.href ? '#E8F8F5' : 'transparent',
+                color: pathname === link.href ? '#00B894' : '#6C757D',
+                fontWeight: pathname === link.href ? 600 : 400,
+                fontSize: 14
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
         </nav>
 
         <div style={{ padding: '16px 12px', borderTop: '1px solid #E9ECEF' }}>
@@ -113,8 +104,7 @@ export default function DashboardLayout({ children }) {
               width: '100%', padding: '10px 12px',
               background: 'transparent', border: '1px solid #E9ECEF',
               borderRadius: 8, cursor: 'pointer',
-              color: '#6C757D', fontSize: 14, textAlign: 'left',
-              display: 'flex', alignItems: 'center', gap: 10
+              color: '#6C757D', fontSize: 14, textAlign: 'left'
             }}
           >
             Sair
