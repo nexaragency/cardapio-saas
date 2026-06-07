@@ -62,7 +62,7 @@ export default function Categorias() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Categorias</h1>
-          <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Organize as secoes do seu cardapio</p>
+          <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Organize as seções do seu cardápio</p>
         </div>
         <a href="/dashboard" style={{ fontSize: 13, color: '#6C757D', textDecoration: 'none' }}>Voltar</a>
       </div>
@@ -76,20 +76,12 @@ export default function Categorias() {
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            style={{
-              flex: 1, padding: '10px 14px', borderRadius: 8,
-              border: '1px solid #E9ECEF', fontSize: 14, outline: 'none',
-              color: '#1A1A2E'
-            }}
+            style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, outline: 'none', color: '#1A1A2E' }}
           />
           <button
             onClick={handleAdd}
             disabled={saving}
-            style={{
-              padding: '10px 20px', background: '#00B894', color: '#fff',
-              border: 'none', borderRadius: 8, cursor: 'pointer',
-              fontSize: 14, fontWeight: 600
-            }}
+            style={{ padding: '10px 20px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
           >
             {saving ? 'Salvando...' : 'Adicionar'}
           </button>
@@ -131,7 +123,8 @@ export default function Categorias() {
                 style={{
                   padding: '6px 14px', borderRadius: 6, border: 'none',
                   cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: cat.active ? '#E8F8F5' : '#F8F9FA', color: cat.active ? '#00B894' : '#6C757D'
+                  background: cat.active ? '#E8F8F5' : '#F8F9FA',
+                  color: cat.active ? '#00B894' : '#6C757D'
                 }}
               >
                 {cat.active ? 'Ativa' : 'Inativa'}

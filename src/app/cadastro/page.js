@@ -26,11 +26,7 @@ export default function Cadastro() {
     setLoading(true)
     setError('')
 
-    // 1. Cria o usuário no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password
-    })
+    const { data: authData, error: authError } = await supabase.auth.signUp({ email, password })
 
     if (authError) {
       setError('Erro ao criar conta: ' + authError.message)
@@ -41,7 +37,6 @@ export default function Cadastro() {
     const userId = authData.user.id
     const slug = generateSlug(restaurantName)
 
-    // 2. Cria o tenant (restaurante)
     const { data: tenant, error: tenantError } = await supabase
       .from('tenants')
       .insert({ name: restaurantName, slug })
@@ -54,68 +49,68 @@ export default function Cadastro() {
       return
     }
 
-    // 3. Cria o usuário vinculado ao tenant
-    await supabase
-      .from('users')
-      .insert({ id: userId, tenant_id: tenant.id, email, name })
-
-    // 4. Cria a subscription trial
-    await supabase
-      .from('subscriptions')
-      .insert({ tenant_id: tenant.id })
+    await supabase.from('users').insert({ id: userId, tenant_id: tenant.id, email, name })
+    await supabase.from('subscriptions').insert({ tenant_id: tenant.id })
 
     router.push('/dashboard')
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '100px auto', padding: 24 }}>
-      <h1>Criar conta</h1>
+    <div style={{ minHeight: '100vh', background: '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Segoe UI, sans-serif' }}>
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 40, width: '100%', maxWidth: 400 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ width: 48, height: 48, background: '#00B894', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', color: '#fff', fontSize: 22, fontWeight: 700 }}>Q</div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>QRDápio</h1>
+          <p style={{ color: '#6C757D', fontSize: 14, margin: 0 }}>Crie sua conta gratuitamente</p>
+        </div>
 
-      <input
-        type="text"
-        placeholder="Seu nome"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        style={{ display: 'block', width: '100%', marginBottom: 12, padding: 8 }}
-      />
+        <input
+          type="text"
+          placeholder="Seu nome"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+        />
 
-      <input
-        type="text"
-        placeholder="Nome do restaurante"
-        value={restaurantName}
-        onChange={e => setRestaurantName(e.target.value)}
-        style={{ display: 'block', width: '100%', marginBottom: 12, padding: 8 }}
-      />
+        <input
+          type="text"
+          placeholder="Nome do restaurante"
+          value={restaurantName}
+          onChange={e => setRestaurantName(e.target.value)}
+          style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+        />
 
-      <input
-        type="email"
-        placeholder="Seu e-mail"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        style={{ display: 'block', width: '100%', marginBottom: 12, padding: 8 }}
-      />
+        <input
+          type="email"
+          placeholder="Seu e-mail"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+        />
 
-      <input
-        type="password"
-        placeholder="Senha"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        style={{ display: 'block', width: '100%', marginBottom: 12, padding: 8 }}
-      />
+        <input
+          type="password"
+          placeholder="Senha (mínimo 6 caracteres)"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 16 }}
+        />
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: '#e53935', fontSize: 13, marginBottom: 12 }}>{error}</p>}
 
-      <button
-        onClick={handleCadastro}
-        disabled={loading}
-        style={{ width: '100%', padding: 10, background: '#FF6B00', color: '#fff', border: 'none', cursor: 'pointer' }}
-      >
-        {loading ? 'Criando conta...' : 'Criar conta'}
-      </button>
+        <button
+          onClick={handleCadastro}
+          disabled={loading}
+          style={{ width: '100%', padding: '11px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+        >
+          {loading ? 'Criando conta...' : 'Criar conta grátis'}
+        </button>
 
-      <p style={{ marginTop: 16, textAlign: 'center' }}>
-        Já tem conta? <a href="/login">Entrar</a>
-      </p>
+        <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#6C757D' }}>
+          Já tem conta?{' '}
+          <a href="/login" style={{ color: '#00B894', fontWeight: 600, textDecoration: 'none' }}>Entrar</a>
+        </p>
+      </div>
     </div>
   )
 }

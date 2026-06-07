@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }) {
               justifyContent: 'center', color: '#fff', fontSize: 18, fontWeight: 700
             }}>Q</div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#1A1A2E' }}>QRDapio</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#1A1A2E' }}>QRDápio</div>
               <div style={{ fontSize: 11, color: '#6C757D' }}>Painel Admin</div>
             </div>
           </div>
@@ -82,14 +82,14 @@ export default function DashboardLayout({ children }) {
         )}
 
         <nav style={{ flex: 1, padding: '12px' }}>
-          <a href="/dashboard" style={linkStyle('/dashboard')}>Inicio</a>
+          <a href="/dashboard" style={linkStyle('/dashboard')}>Início</a>
           <a href="/dashboard/produtos" style={linkStyle('/dashboard/produtos')}>Produtos</a>
           <a href="/dashboard/categorias" style={linkStyle('/dashboard/categorias')}>Categorias</a>
           <a href="/dashboard/pedidos" style={linkStyle('/dashboard/pedidos')}>Pedidos</a>
-          <a href="/dashboard/relatorios" style={linkStyle('/dashboard/relatorios')}>Relatorios</a>
-<a href="/dashboard/salao" style={linkStyle('/dashboard/salao')}>Salao</a>
-<a href="/dashboard/entregas" style={linkStyle('/dashboard/entregas')}>Entregas</a>
-<a href="/dashboard/configuracoes" style={linkStyle('/dashboard/configuracoes')}>Configuracoes</a>
+          <a href="/dashboard/relatorios" style={linkStyle('/dashboard/relatorios')}>Relatórios</a>
+          <a href="/dashboard/salao" style={linkStyle('/dashboard/salao')}>Gestão do Salão</a>
+          <a href="/dashboard/entregas" style={linkStyle('/dashboard/entregas')}>Entregas</a>
+          <a href="/dashboard/configuracoes" style={linkStyle('/dashboard/configuracoes')}>Configurações</a>
         </nav>
 
         <div style={{ padding: '16px 12px', borderTop: '1px solid #E9ECEF' }}>

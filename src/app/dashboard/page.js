@@ -32,7 +32,7 @@ export default function Dashboard() {
     {
       href: '/dashboard/produtos',
       label: 'Produtos',
-      desc: 'Gerencie seu cardapio',
+      desc: 'Gerencie seu cardápio',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00B894" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 3h18M3 9h18M3 15h18M3 21h18" />
@@ -53,7 +53,7 @@ export default function Dashboard() {
     },
     {
       href: '/dashboard/relatorios',
-      label: 'Relatorios',
+      label: 'Relatórios',
       desc: 'Veja seu desempenho',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00B894" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -65,13 +65,12 @@ export default function Dashboard() {
 
   return (
     <div style={{ maxWidth: 960 }}>
-
       <div style={{ marginBottom: 40 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 6px' }}>
-          {'Ola, ' + (tenant ? tenant.name : '') + '!'}
+          {'Olá, ' + (tenant ? tenant.name : '') + '!'}
         </h1>
         <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>
-          {'Cardapio publico: '}
+          {'Cardápio público: '}
           <a href={slugUrl} target="_blank" style={{ color: '#00B894', fontWeight: 600, textDecoration: 'none' }}>
             {slugUrl}
           </a>
@@ -108,7 +107,6 @@ export default function Dashboard() {
               border: '1px solid #E9ECEF',
               borderRadius: 12,
               padding: '24px',
-              transition: 'border-color 0.2s',
               cursor: 'pointer'
             }}>
               <div style={{
@@ -133,7 +131,6 @@ export default function Dashboard() {
           </a>
         ))}
       </div>
-
     </div>
   )
 }

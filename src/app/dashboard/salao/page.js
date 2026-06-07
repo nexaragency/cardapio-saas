@@ -91,7 +91,7 @@ export default function Salao() {
           <img src="${qrUrl}" style="width:250px;height:250px;margin-bottom:20px" />
           <h2 style="margin:0 0 8px;font-size:24px">Mesa ${table.number}</h2>
           <p style="color:#666;margin:0;font-size:14px">${tenant?.name}</p>
-          <p style="color:#aaa;margin:8px 0 0;font-size:11px">Escaneie para acessar o cardapio</p>
+          <p style="color:#aaa;margin:8px 0 0;font-size:11px">Escaneie para acessar o cardápio</p>
         </body>
       </html>
     `)
@@ -108,8 +108,8 @@ export default function Salao() {
         <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;background:#fff">
           <img src="${qrUrl}" style="width:250px;height:250px;margin-bottom:20px" />
           <h2 style="margin:0 0 8px;font-size:24px">${tenant?.name}</h2>
-          <p style="color:#666;margin:0;font-size:14px">Cardapio Digital</p>
-          <p style="color:#aaa;margin:8px 0 0;font-size:11px">Escaneie para acessar o cardapio</p>
+          <p style="color:#666;margin:0;font-size:14px">Cardápio Digital</p>
+          <p style="color:#aaa;margin:8px 0 0;font-size:11px">Escaneie para acessar o cardápio</p>
         </body>
       </html>
     `)
@@ -136,11 +136,11 @@ export default function Salao() {
             Recurso do Plano Pro
           </h2>
           <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 24px', lineHeight: 1.6 }}>
-            A Gestao do Salao com QR Code por mesa esta disponivel no plano Pro e Premium. Faca upgrade para liberar este e outros recursos.
+            A Gestão do Salão com QR Code por mesa está disponível no plano Pro e Premium. Faça upgrade para liberar este e outros recursos.
           </p>
           <div style={{ background: '#F8F9FA', borderRadius: 12, padding: 20, marginBottom: 24, textAlign: 'left' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 12 }}>O QUE VOCE GANHA NO PRO</div>
-            {['Gestao do Salao completa', 'QR Code individual por mesa', 'Identificacao automatica da mesa no pedido', 'Visao geral do salao em tempo real'].map(item => (
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 12 }}>O QUE VOCÊ GANHA NO PRO</div>
+            {['Gestão do Salão completa', 'QR Code individual por mesa', 'Identificação automática da mesa no pedido', 'Visão geral do salão em tempo real'].map(item => (
               <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 18, height: 18, background: '#E8F8F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#00B894', fontWeight: 700 }}>✓</div>
                 <span style={{ fontSize: 13, color: '#1A1A2E' }}>{item}</span>
@@ -150,7 +150,7 @@ export default function Salao() {
           <button
             style={{ width: '100%', padding: '12px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}
           >
-            Fazer upgrade para Pro — R$ 99/mes
+            Fazer upgrade para Pro — R$ 99/mês
           </button>
         </div>
       </div>
@@ -161,7 +161,7 @@ export default function Salao() {
     <div style={{ maxWidth: 800 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Gestao do Salao</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Gestão do Salão</h1>
           <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>{tables.length + ' mesa(s) cadastrada(s)'}</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -186,7 +186,7 @@ export default function Salao() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10 }}>
             <input
               type="number"
-              placeholder="Numero da mesa *"
+              placeholder="Número da mesa *"
               value={form.number}
               onChange={e => setForm({ ...form, number: e.target.value })}
               style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none' }}
@@ -223,7 +223,7 @@ export default function Salao() {
                 background: statusColor[table.status]?.bg,
                 color: statusColor[table.status]?.color
               }}>
-                {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
+                {table.status === 'livre' ? 'Livre' : table.status === 'ocupada' ? 'Ocupada' : 'Reservada'}
               </span>
             </div>
 
@@ -238,7 +238,7 @@ export default function Salao() {
                     color: table.status === s ? statusColor[s].color : '#adb5bd'
                   }}
                 >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                  {s === 'livre' ? 'Livre' : s === 'ocupada' ? 'Ocupada' : 'Reservada'}
                 </button>
               ))}
             </div>
@@ -265,7 +265,7 @@ export default function Salao() {
         <div style={{ textAlign: 'center', padding: '48px 0', color: '#6C757D' }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>🪑</div>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>Nenhuma mesa cadastrada</div>
-          <div style={{ fontSize: 13 }}>Clique em Nova Mesa para comecar</div>
+          <div style={{ fontSize: 13 }}>Clique em Nova Mesa para começar</div>
         </div>
       )}
     </div>

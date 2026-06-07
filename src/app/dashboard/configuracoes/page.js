@@ -49,7 +49,7 @@ export default function Configuracoes() {
   return (
     <div style={{ maxWidth: 580 }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Configuracoes</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Configurações</h1>
         <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Gerencie os dados do seu restaurante</p>
       </div>
 
@@ -68,18 +68,18 @@ export default function Configuracoes() {
 
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>
-            Numero do WhatsApp
+            Número do WhatsApp
           </label>
           <input
             type="text"
-            placeholder="Ex: 5545999999999"
+            placeholder="Ex: 45999887766"
             value={form.phone}
             onChange={e => setForm({ ...form, phone: e.target.value })}
             style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
           />
           <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6C757D' }}>
-  Formato: DDD + numero. Ex: 45999887766
-</p>
+            Formato: DDD + número. Ex: 45999887766
+          </p>
         </div>
 
         {success && (
@@ -93,14 +93,14 @@ export default function Configuracoes() {
           disabled={saving}
           style={{ padding: '10px 24px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
         >
-          {saving ? 'Salvando...' : 'Salvar alteracoes'}
+          {saving ? 'Salvando...' : 'Salvar alterações'}
         </button>
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEU CARDAPIO PUBLICO</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEU CARDÁPIO PÚBLICO</div>
         <p style={{ fontSize: 13, color: '#6C757D', margin: '0 0 12px' }}>
-          Compartilhe este link ou use o QR Code para seus clientes acessarem o cardapio.
+          Compartilhe este link ou use o QR Code para seus clientes acessarem o cardápio.
         </p>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div style={{ flex: 1, padding: '10px 14px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 13, color: '#1A1A2E', wordBreak: 'break-all' }}>
@@ -118,10 +118,10 @@ export default function Configuracoes() {
       <div style={{ background: '#FFF8E8', border: '1px solid #FFD166', borderRadius: 12, padding: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#B8860B', letterSpacing: '0.8px', marginBottom: 8 }}>COMO CONFIGURAR O WHATSAPP</div>
         <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#6C757D', lineHeight: 2 }}>
-          <li>Coloque o numero do WhatsApp do restaurante no campo acima</li>
-          <li>Use o formato internacional: 55 + DDD + numero</li>
-          <li>Exemplo: 45999887766 para Parana com DDD 45</li>
-          <li>Quando um cliente fizer um pedido, ele sera enviado direto para esse numero</li>
+          <li>Coloque o número do WhatsApp do restaurante no campo acima</li>
+          <li>Use o formato: DDD + número</li>
+          <li>Exemplo: 45999887766 para Paraná com DDD 45</li>
+          <li>Quando um cliente fizer um pedido, ele será enviado direto para esse número</li>
         </ol>
       </div>
     </div>

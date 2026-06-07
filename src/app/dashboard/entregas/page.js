@@ -115,7 +115,7 @@ export default function Entregas() {
       <div style={{ background: '#FFF8E8', border: '1px solid #FFD166', borderRadius: 12, padding: 16, marginBottom: 24 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#B8860B', letterSpacing: '0.8px', marginBottom: 6 }}>DICA</div>
         <p style={{ margin: 0, fontSize: 13, color: '#6C757D', lineHeight: 1.6 }}>
-          Para entrega gratis em algum bairro, coloque a taxa como 0. Bairros inativos nao aparecem para o cliente.
+          Para entrega grátis em algum bairro, coloque a taxa como 0. Bairros inativos não aparecem para o cliente.
         </p>
       </div>
 
@@ -123,7 +123,7 @@ export default function Entregas() {
         <div style={{ textAlign: 'center', padding: '48px 0', color: '#6C757D' }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>🛵</div>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>Nenhum bairro cadastrado</div>
-          <div style={{ fontSize: 13 }}>Adicione os bairros que voce atende acima</div>
+          <div style={{ fontSize: 13 }}>Adicione os bairros que você atende acima</div>
         </div>
       )}
 
@@ -169,7 +169,7 @@ export default function Entregas() {
                       {zone.neighborhood}
                     </div>
                     <div style={{ fontSize: 13, color: '#00B894', fontWeight: 700, marginTop: 2 }}>
-                      {zone.fee === 0 ? 'Gratis' : 'R$ ' + Number(zone.fee).toFixed(2)}
+                      {zone.fee === 0 ? 'Grátis' : 'R$ ' + Number(zone.fee).toFixed(2)}
                     </div>
                   </div>
                 </div>

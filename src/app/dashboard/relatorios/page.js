@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation'
 const PAYMENT_LABEL = {
   dinheiro: 'Dinheiro',
   pix: 'Pix',
-  debito: 'Cartao Debito',
-  credito: 'Cartao Credito'
+  debito: 'Cartão Débito',
+  credito: 'Cartão Crédito'
 }
 
 export default function Relatorios() {
@@ -94,7 +94,7 @@ export default function Relatorios() {
     <div style={{ maxWidth: 800 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Relatorios</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Relatórios</h1>
           <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Apenas pedidos com status Entregue</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -109,7 +109,7 @@ export default function Relatorios() {
                 border: period === p ? '1px solid #1A1A2E' : '1px solid #E9ECEF'
               }}
             >
-              {p === 'hoje' ? 'Hoje' : p === 'semana' ? 'Semana' : 'Mes'}
+              {p === 'hoje' ? 'Hoje' : p === 'semana' ? 'Semana' : 'Mês'}
             </button>
           ))}
         </div>
@@ -127,7 +127,7 @@ export default function Relatorios() {
           <div style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E' }}>{totalOrders}</div>
         </div>
         <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
-          <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>TICKET MEDIO</div>
+          <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>TICKET MÉDIO</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E' }}>
             {'R$ ' + avgTicket.toFixed(2)}
           </div>
@@ -189,9 +189,9 @@ export default function Relatorios() {
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20 }}>
-        <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 16 }}>ULTIMOS PEDIDOS ENTREGUES</div>
+        <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 16 }}>ÚLTIMOS PEDIDOS ENTREGUES</div>
         {orders.length === 0 && (
-          <p style={{ color: '#adb5bd', fontSize: 13 }}>Nenhum pedido entregue neste periodo</p>
+          <p style={{ color: '#adb5bd', fontSize: 13 }}>Nenhum pedido entregue neste período</p>
         )}
         {orders.slice(0, 10).map(order => (
           <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #F8F9FA' }}>
