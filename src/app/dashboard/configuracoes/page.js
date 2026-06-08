@@ -12,6 +12,8 @@ export default function Configuracoes() {
   const [success, setSuccess] = useState(false)
   const [bannerFile, setBannerFile] = useState(null)
   const [bannerPreview, setBannerPreview] = useState(null)
+  const [logoFile, setLogoFile] = useState(null)
+const [logoPreview, setLogoPreview] = useState(null)
   const [form, setForm] = useState({
     name: '', phone: '', slug: '', city: '',
     open_time: '18:00', close_time: '23:00'
@@ -36,6 +38,9 @@ export default function Configuracoes() {
         if (userData.tenants.banner_url) {
           setBannerPreview(userData.tenants.banner_url)
         }
+        if (userData.tenants.logo_url) {
+  setLogoPreview(userData.tenants.logo_url)
+}
       }
       setLoading(false)
     }
@@ -59,6 +64,23 @@ export default function Configuracoes() {
     const { data } = supabase.storage.from('produtos').getPublicUrl(filename)
     return data.publicUrl
   }
+  async function uploadLogo(file) {
+  const ext = file.name.split('.').pop()
+  const filename = 'logo_' + tenantId + '.' + ext
+  const { error } = await supabase.storage
+    .from('produtos')
+    .upload(filename, file, { upsert: true })
+  if (error) return null
+  const { data } = supabase.storage.from('produtos').getPublicUrl(filename)
+  return data.publicUrl
+}
+
+function handleLogoChange(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  setLogoFile(file)
+  setLogoPreview(URL.createObjectURL(file))
+}
 
   async function handleSave() {
     setSaving(true)
@@ -68,6 +90,10 @@ export default function Configuracoes() {
     if (bannerFile) {
       bannerUrl = await uploadBanner(bannerFile)
     }
+    let logoUrl = null
+if (logoFile) {
+  logoUrl = await uploadLogo(logoFile)
+}
 
     const update = {
       name: form.name,
@@ -78,6 +104,7 @@ export default function Configuracoes() {
     }
 
     if (bannerUrl) update.banner_url = bannerUrl
+    if (logoUrl) update.logo_url = logoUrl
 
     const { error } = await supabase
       .from('tenants').update(update).eq('id', tenantId)
@@ -106,6 +133,25 @@ export default function Configuracoes() {
           background: '#F8F9FA',
           marginBottom: 8
         }}>
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+  <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>LOGO DO RESTAURANTE</div>
+  <label style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
+    <input type="file" accept="image/*" onChange={handleLogoChange} style={{ display: 'none' }} />
+    {logoPreview ? (
+      <img src={logoPreview} alt="logo" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 12, border: '2px solid #E9ECEF' }} />
+    ) : (
+      <div style={{ width: 80, height: 80, background: '#F8F9FA', borderRadius: 12, border: '2px dashed #E9ECEF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
+        🖼️
+      </div>
+    )}
+    <div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 4 }}>
+        {logoPreview ? 'Clique para trocar a logo' : 'Clique para adicionar a logo'}
+      </div>
+      <div style={{ fontSize: 12, color: '#6C757D' }}>Recomendado: imagem quadrada 200x200px</div>
+    </div>
+  </label>
+</div>
           <input type="file" accept="image/*" onChange={handleBannerChange} style={{ display: 'none' }} />
           {bannerPreview ? (
             <img src={bannerPreview} alt="banner" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
@@ -115,6 +161,7 @@ export default function Configuracoes() {
               <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Clique para adicionar banner</div>
               <div style={{ fontSize: 12, color: '#6C757D' }}>Recomendado: 1200x300px</div>
             </div>
+            
           )}
         </label>
         {bannerPreview && (
