@@ -292,71 +292,75 @@ export default function CardapioPublico({ params }) {
     <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
 
       {/* BANNER */}
-<div style={{ width: '100%', height: 300, overflow: 'hidden', position: 'relative', background: '#1A1A2E' }}>
-  {tenant.banner_url ? (
+<div style={{ width: '100%', height: 200, overflow: 'hidden', background: 'linear-gradient(135deg, #00B894, #00856F)' }}>
+  {tenant.banner_url && (
     <img src={tenant.banner_url} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-  ) : (
-    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #00B894, #00856F)' }} />
   )}
 </div>
 
-      {/* HEADER DO RESTAURANTE */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '16px 20px 0' }}>
+{/* HEADER DO RESTAURANTE */}
+<div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '0 20px' }}>
   <div style={{ maxWidth: 960, margin: '0 auto' }}>
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 16, marginTop: tenant.banner_url ? -44 : 0 }}>
-            <div style={{ width: 88, height: 88, borderRadius: 14, flexShrink: 0, border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', overflow: 'hidden', background: '#00B894', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-  {tenant.logo_url ? (
-    <img src={tenant.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-  ) : (
-    <span style={{ color: '#fff', fontSize: 32, fontWeight: 700 }}>{tenant.name.charAt(0)}</span>
-  )}
-</div>
-            <div style={{ flex: 1, paddingTop: 8 }}>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{tenant.name}</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? '#00B894' : '#e53935' }}>
-                  {isOpen ? '● Aberto' : '● Fechado'}
-                </span>
-                {tenant.open_time && tenant.close_time && (
-                  <span style={{ fontSize: 12, color: '#6C757D' }}>
-                    {'Funciona das ' + tenant.open_time.slice(0, 5) + ' às ' + tenant.close_time.slice(0, 5)}
-                  </span>
-                )}
-                {tenant.city && (
-                  <span style={{ fontSize: 12, color: '#6C757D' }}>📍 {tenant.city}</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* CATEGORIAS */}
-          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 0 }}>
-            <button
-              onClick={() => setActiveCategory(null)}
-              style={{
-                padding: '12px 16px', border: 'none', background: 'transparent',
-                cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-                color: activeCategory === null ? '#00B894' : '#6C757D',
-                borderBottom: activeCategory === null ? '2px solid #00B894' : '2px solid transparent'
-              }}
-            >
-              Todos
-            </button>
-            {categories.map(cat => (
-              <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                style={{
-                  padding: '12px 16px', border: 'none', background: 'transparent',
-                  cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-                  color: activeCategory === cat.id ? '#00B894' : '#6C757D',
-                  borderBottom: activeCategory === cat.id ? '2px solid #00B894' : '2px solid transparent'
-                }}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, paddingBottom: 16 }}>
+      <div style={{
+        width: 88, height: 88, borderRadius: 14, flexShrink: 0,
+        border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        overflow: 'hidden', background: '#00B894',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginTop: -44, position: 'relative', zIndex: 10
+      }}>
+        {tenant.logo_url ? (
+          <img src={tenant.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span style={{ color: '#fff', fontSize: 32, fontWeight: 700 }}>{tenant.name.charAt(0)}</span>
+        )}
+      </div>
+      <div style={{ flex: 1, paddingBottom: 4 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{tenant.name}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? '#00B894' : '#e53935' }}>
+            {isOpen ? '● Aberto' : '● Fechado'}
+          </span>
+          {tenant.open_time && tenant.close_time && (
+            <span style={{ fontSize: 12, color: '#6C757D' }}>
+              {'Funciona das ' + tenant.open_time.slice(0, 5) + ' às ' + tenant.close_time.slice(0, 5)}
+            </span>
+          )}
+          {tenant.city && (
+            <span style={{ fontSize: 12, color: '#6C757D' }}>📍 {tenant.city}</span>
+          )}
         </div>
       </div>
+    </div>
+
+    {/* CATEGORIAS */}
+    <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
+      <button
+        onClick={() => setActiveCategory(null)}
+        style={{
+          padding: '12px 16px', border: 'none', background: 'transparent',
+          cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
+          color: activeCategory === null ? '#00B894' : '#6C757D',
+          borderBottom: activeCategory === null ? '2px solid #00B894' : '2px solid transparent'
+        }}
+      >
+        Todos
+      </button>
+      {categories.map(cat => (
+        <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+          style={{
+            padding: '12px 16px', border: 'none', background: 'transparent',
+            cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
+            color: activeCategory === cat.id ? '#00B894' : '#6C757D',
+            borderBottom: activeCategory === cat.id ? '2px solid #00B894' : '2px solid transparent'
+          }}
+        >
+          {cat.name}
+        </button>
+      ))}
+    </div>
+  </div>
+</div>
 
       {step === 'menu' && (
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '20px 16px', paddingBottom: 100 }}>
