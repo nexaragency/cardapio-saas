@@ -7,18 +7,40 @@ import { useRouter } from 'next/navigation'
 export default function Dashboard() {
   const router = useRouter()
   const [tenant, setTenant] = useState(null)
+  const [subscription, setSubscription] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [daysLeft, setDaysLeft] = useState(null)
 
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
+
       const { data: userData } = await supabase
         .from('users')
         .select('*, tenants(*)')
         .eq('id', user.id)
         .single()
-      if (userData) setTenant(userData.tenants)
+
+      if (userData) {
+        setTenant(userData.tenants)
+
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('tenant_id', userData.tenant_id)
+          .single()
+
+        setSubscription(sub)
+
+        if (sub?.trial_ends_at && sub?.status === 'trial') {
+          const trialEnd = new Date(sub.trial_ends_at)
+          const now = new Date()
+          const diff = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
+          setDaysLeft(diff > 0 ? diff : 0)
+        }
+      }
+
       setLoading(false)
     }
     loadData()
@@ -65,6 +87,31 @@ export default function Dashboard() {
 
   return (
     <div style={{ maxWidth: 960 }}>
+
+      {daysLeft !== null && daysLeft <= 3 && (
+        <div style={{
+          background: daysLeft === 0 ? '#FFF5F5' : '#FFF8E8',
+          border: daysLeft === 0 ? '1px solid #e53935' : '1px solid #FFD166',
+          borderRadius: 12, padding: '14px 20px', marginBottom: 24,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: daysLeft === 0 ? '#e53935' : '#B8860B' }}>
+              {daysLeft === 0 ? 'Trial expirado!' : daysLeft === 1 ? 'Último dia de trial!' : daysLeft + ' dias de trial restantes'}
+            </div>
+            <div style={{ fontSize: 13, color: '#6C757D', marginTop: 2 }}>
+              {daysLeft === 0 ? 'Assine agora para continuar usando o QRDápio.' : 'Assine antes que seu acesso seja bloqueado.'}
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/assinar')}
+            style={{ padding: '8px 20px', background: daysLeft === 0 ? '#e53935' : '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', marginLeft: 16 }}
+          >
+            Assinar agora
+          </button>
+        </div>
+      )}
+
       <div style={{ marginBottom: 40 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 6px' }}>
           {'Olá, ' + (tenant ? tenant.name : '') + '!'}
