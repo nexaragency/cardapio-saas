@@ -53,9 +53,7 @@ export default function CardapioPublico({ params }) {
         const current = now.getHours() * 60 + now.getMinutes()
         const [oh, om] = tenantData.open_time.split(':').map(Number)
         const [ch, cm] = tenantData.close_time.split(':').map(Number)
-        const open = oh * 60 + om
-        const close = ch * 60 + cm
-        setIsOpen(current >= open && current <= close)
+        setIsOpen(current >= (oh * 60 + om) && current <= (ch * 60 + cm))
       }
 
       const { data: cats } = await supabase
@@ -96,6 +94,7 @@ export default function CardapioPublico({ params }) {
 
   useEffect(() => {
     if (!currentOrder) return
+    if (currentOrder.order_type === 'salao') return
     if (Notification.permission === 'default') Notification.requestPermission()
 
     const channel = supabase
@@ -227,24 +226,75 @@ export default function CardapioPublico({ params }) {
   )
 
   if (step === 'tracking' && currentOrder) {
-  const statusIndex = STATUS_FLOW.indexOf(currentOrder.status)
-  const isDelivered = currentOrder.status === 'entregue'
+    const statusIndex = STATUS_FLOW.indexOf(currentOrder.status)
+    const isDelivered = currentOrder.status === 'entregue'
 
-  if (currentOrder.order_type === 'salao') {
+    if (currentOrder.order_type === 'salao') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F8F9FA', fontFamily: 'Segoe UI, sans-serif', padding: 24 }}>
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 40, textAlign: 'center', maxWidth: 400, width: '100%' }}>
+            <div style={{ width: 64, height: 64, background: '#E8F8F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 28 }}>✓</div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 10px' }}>Pedido recebido!</h2>
+            <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 8px' }}>{'Mesa ' + currentOrder.table_number}</p>
+            <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 24px' }}>Seu pedido já foi enviado para a cozinha. Em breve estará na sua mesa!</p>
+            <div style={{ background: '#F8F9FA', borderRadius: 10, padding: 16, marginBottom: 24, textAlign: 'left' }}>
+              {currentOrder.order_items && currentOrder.order_items.map(item => (
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13 }}>
+                  <span style={{ color: '#1A1A2E' }}>{item.quantity}x {item.product_name}</span>
+                  <span style={{ fontWeight: 600, color: '#1A1A2E' }}>R$ {Number(item.subtotal).toFixed(2)}</span>
+                </div>
+              ))}
+              <div style={{ borderTop: '1px solid #E9ECEF', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}>
+                <span>Total</span>
+                <span style={{ color: '#00B894' }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
+              style={{ width: '100%', padding: '12px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+            >
+              Fazer novo pedido
+            </button>
+          </div>
+        </div>
+      )
+    }
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F8F9FA', fontFamily: 'Segoe UI, sans-serif', padding: 24 }}>
-        <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 40, textAlign: 'center', maxWidth: 400, width: '100%' }}>
-          <div style={{ width: 64, height: 64, background: '#E8F8F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 28 }}>✓</div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 10px' }}>Pedido recebido!</h2>
-          <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 8px' }}>
-            {'Mesa ' + currentOrder.table_number}
+      <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
+        <div style={{ background: '#00B894', padding: '28px 20px 20px', textAlign: 'center' }}>
+          <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>{tenant.name}</h1>
+          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>
+            Pedido #{currentOrder.id.slice(-6).toUpperCase()}
           </p>
-          <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 24px' }}>
-            Seu pedido já foi enviado para a cozinha. Em breve estará na sua mesa!
-          </p>
-          <div style={{ background: '#F8F9FA', borderRadius: 10, padding: 16, marginBottom: 24, textAlign: 'left' }}>
+        </div>
+
+        <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 16px' }}>
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 28, marginBottom: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>
+              {currentOrder.status === 'novo' ? '🕐' : currentOrder.status === 'impresso' ? '✅' : currentOrder.status === 'em_preparo' ? '👨‍🍳' : currentOrder.status === 'saiu_entrega' ? '🛵' : '🎉'}
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A2E', margin: '0 0 8px' }}>{STATUS_LABEL[currentOrder.status]}</h2>
+            <p style={{ color: '#6C757D', fontSize: 14, margin: 0 }}>{STATUS_DESC[currentOrder.status]}</p>
+          </div>
+
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <div style={{ height: 4, background: '#E9ECEF', borderRadius: 2, marginBottom: 12 }}>
+              <div style={{ height: 4, background: '#00B894', borderRadius: 2, width: (statusIndex / (STATUS_FLOW.length - 1) * 100) + '%', transition: 'width 0.5s ease' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              {STATUS_FLOW.map((s, i) => (
+                <div key={s} style={{ width: 24, height: 24, borderRadius: '50%', background: i <= statusIndex ? '#00B894' : '#E9ECEF', color: i <= statusIndex ? '#fff' : '#adb5bd', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {i < statusIndex ? '✓' : i + 1}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 12 }}>RESUMO</div>
             {currentOrder.order_items && currentOrder.order_items.map(item => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13 }}>
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 13 }}>
                 <span style={{ color: '#1A1A2E' }}>{item.quantity}x {item.product_name}</span>
                 <span style={{ fontWeight: 600, color: '#1A1A2E' }}>R$ {Number(item.subtotal).toFixed(2)}</span>
               </div>
@@ -254,12 +304,15 @@ export default function CardapioPublico({ params }) {
               <span style={{ color: '#00B894' }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
             </div>
           </div>
-          <button
-            onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
-            style={{ width: '100%', padding: '12px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
-          >
-            Fazer novo pedido
-          </button>
+
+          {isDelivered ? (
+            <button onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
+              style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+              Fazer novo pedido
+            </button>
+          ) : (
+            <p style={{ textAlign: 'center', color: '#adb5bd', fontSize: 12, margin: 0 }}>Atualizando automaticamente...</p>
+          )}
         </div>
       </div>
     )
@@ -267,145 +320,60 @@ export default function CardapioPublico({ params }) {
 
   return (
     <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
-      <div style={{ background: '#00B894', padding: '28px 20px 20px', textAlign: 'center' }}>
-        <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>{tenant.name}</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>
-          Pedido #{currentOrder.id.slice(-6).toUpperCase()}
-        </p>
+
+      <div style={{ width: '100%', height: 200, overflow: 'hidden', background: 'linear-gradient(135deg, #00B894, #00856F)' }}>
+        {tenant.banner_url && (
+          <img src={tenant.banner_url} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+        )}
       </div>
 
-      <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 16px' }}>
-        <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 28, marginBottom: 16, textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>
-            {currentOrder.status === 'novo' ? '🕐' : currentOrder.status === 'impresso' ? '✅' : currentOrder.status === 'em_preparo' ? '👨‍🍳' : currentOrder.status === 'saiu_entrega' ? '🛵' : '🎉'}
-          </div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A2E', margin: '0 0 8px' }}>{STATUS_LABEL[currentOrder.status]}</h2>
-          <p style={{ color: '#6C757D', fontSize: 14, margin: 0 }}>{STATUS_DESC[currentOrder.status]}</p>
-        </div>
-
-        <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-          <div style={{ height: 4, background: '#E9ECEF', borderRadius: 2, marginBottom: 12 }}>
-            <div style={{ height: 4, background: '#00B894', borderRadius: 2, width: (statusIndex / (STATUS_FLOW.length - 1) * 100) + '%', transition: 'width 0.5s ease' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            {STATUS_FLOW.map((s, i) => (
-              <div key={s} style={{ width: 24, height: 24, borderRadius: '50%', background: i <= statusIndex ? '#00B894' : '#E9ECEF', color: i <= statusIndex ? '#fff' : '#adb5bd', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {i < statusIndex ? '✓' : i + 1}
+      <div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '0 20px' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, paddingBottom: 16 }}>
+            <div style={{ width: 88, height: 88, borderRadius: 14, flexShrink: 0, border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', overflow: 'hidden', background: '#00B894', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: -44, position: 'relative', zIndex: 10 }}>
+              {tenant.logo_url ? (
+                <img src={tenant.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ color: '#fff', fontSize: 32, fontWeight: 700 }}>{tenant.name.charAt(0)}</span>
+              )}
+            </div>
+            <div style={{ flex: 1, paddingBottom: 4 }}>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{tenant.name}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? '#00B894' : '#e53935' }}>
+                  {isOpen ? '● Aberto' : '● Fechado'}
+                </span>
+                {tenant.open_time && tenant.close_time && (
+                  <span style={{ fontSize: 12, color: '#6C757D' }}>
+                    {'Funciona das ' + tenant.open_time.slice(0, 5) + ' às ' + tenant.close_time.slice(0, 5)}
+                  </span>
+                )}
+                {tenant.city && <span style={{ fontSize: 12, color: '#6C757D' }}>📍 {tenant.city}</span>}
               </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
+            <button onClick={() => setActiveCategory(null)}
+              style={{ padding: '12px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', color: activeCategory === null ? '#00B894' : '#6C757D', borderBottom: activeCategory === null ? '2px solid #00B894' : '2px solid transparent' }}>
+              Todos
+            </button>
+            {categories.map(cat => (
+              <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+                style={{ padding: '12px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', color: activeCategory === cat.id ? '#00B894' : '#6C757D', borderBottom: activeCategory === cat.id ? '2px solid #00B894' : '2px solid transparent' }}>
+                {cat.name}
+              </button>
             ))}
           </div>
         </div>
-
-        <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 12 }}>RESUMO</div>
-          {currentOrder.order_items && currentOrder.order_items.map(item => (
-            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 13 }}>
-              <span style={{ color: '#1A1A2E' }}>{item.quantity}x {item.product_name}</span>
-              <span style={{ fontWeight: 600, color: '#1A1A2E' }}>R$ {Number(item.subtotal).toFixed(2)}</span>
-            </div>
-          ))}
-          <div style={{ borderTop: '1px solid #E9ECEF', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}>
-            <span>Total</span>
-            <span style={{ color: '#00B894' }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
-          </div>
-        </div>
-
-        {isDelivered ? (
-          <button onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
-            style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
-            Fazer novo pedido
-          </button>
-        ) : (
-          <p style={{ textAlign: 'center', color: '#adb5bd', fontSize: 12, margin: 0 }}>Atualizando automaticamente...</p>
-        )}
       </div>
-    </div>
-  )
-}
-
-      {/* BANNER */}
-<div style={{ width: '100%', height: 200, overflow: 'hidden', background: 'linear-gradient(135deg, #00B894, #00856F)' }}>
-  {tenant.banner_url && (
-    <img src={tenant.banner_url} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-  )}
-</div>
-
-{/* HEADER DO RESTAURANTE */}
-<div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '0 20px' }}>
-  <div style={{ maxWidth: 960, margin: '0 auto' }}>
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, paddingBottom: 16 }}>
-      <div style={{
-        width: 88, height: 88, borderRadius: 14, flexShrink: 0,
-        border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        overflow: 'hidden', background: '#00B894',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginTop: -44, position: 'relative', zIndex: 10
-      }}>
-        {tenant.logo_url ? (
-          <img src={tenant.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <span style={{ color: '#fff', fontSize: 32, fontWeight: 700 }}>{tenant.name.charAt(0)}</span>
-        )}
-      </div>
-      <div style={{ flex: 1, paddingBottom: 4 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{tenant.name}</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? '#00B894' : '#e53935' }}>
-            {isOpen ? '● Aberto' : '● Fechado'}
-          </span>
-          {tenant.open_time && tenant.close_time && (
-            <span style={{ fontSize: 12, color: '#6C757D' }}>
-              {'Funciona das ' + tenant.open_time.slice(0, 5) + ' às ' + tenant.close_time.slice(0, 5)}
-            </span>
-          )}
-          {tenant.city && (
-            <span style={{ fontSize: 12, color: '#6C757D' }}>📍 {tenant.city}</span>
-          )}
-        </div>
-      </div>
-    </div>
-
-    {/* CATEGORIAS */}
-    <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
-      <button
-        onClick={() => setActiveCategory(null)}
-        style={{
-          padding: '12px 16px', border: 'none', background: 'transparent',
-          cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-          color: activeCategory === null ? '#00B894' : '#6C757D',
-          borderBottom: activeCategory === null ? '2px solid #00B894' : '2px solid transparent'
-        }}
-      >
-        Todos
-      </button>
-      {categories.map(cat => (
-        <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-          style={{
-            padding: '12px 16px', border: 'none', background: 'transparent',
-            cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-            color: activeCategory === cat.id ? '#00B894' : '#6C757D',
-            borderBottom: activeCategory === cat.id ? '2px solid #00B894' : '2px solid transparent'
-          }}
-        >
-          {cat.name}
-        </button>
-      ))}
-    </div>
-  </div>
-</div>
 
       {step === 'menu' && (
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '20px 16px', paddingBottom: 100 }}>
-
-          {/* BUSCA */}
           <div style={{ position: 'relative', marginBottom: 24 }}>
-            <input
-              type="text"
-              placeholder="Busque por um produto..."
-              value={searchTerm}
+            <input type="text" placeholder="Busque por um produto..." value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 10, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', background: '#fff', boxSizing: 'border-box' }}
-            />
+              style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 10, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', background: '#fff', boxSizing: 'border-box' }} />
             <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', fontSize: 18 }}>🔍</span>
           </div>
 
@@ -416,7 +384,6 @@ export default function CardapioPublico({ params }) {
             </div>
           )}
 
-          {/* GRID DE PRODUTOS */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {filteredProducts.map(product => {
               const qty = getQty(product.id)
@@ -431,9 +398,7 @@ export default function CardapioPublico({ params }) {
                       <div style={{ fontSize: 12, color: '#6C757D', marginBottom: 8, lineHeight: 1.4, flex: 1 }}>{product.description}</div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#00B894' }}>
-                        {'R$ ' + Number(product.price).toFixed(2)}
-                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#00B894' }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
                       {qty === 0 ? (
                         <button onClick={() => addToCart(product)}
                           style={{ padding: '6px 16px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
@@ -468,7 +433,7 @@ export default function CardapioPublico({ params }) {
       {step === 'checkout' && (
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 16px 100px' }}>
           <button onClick={() => setStep('menu')} style={{ background: 'none', border: 'none', color: '#6C757D', cursor: 'pointer', fontSize: 14, marginBottom: 20, padding: 0 }}>
-            ← Voltar ao cardápio
+            Voltar ao cardápio
           </button>
 
           {tableNumber && (
@@ -547,12 +512,7 @@ export default function CardapioPublico({ params }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                   {['dinheiro', 'pix', 'debito', 'credito'].map(method => (
                     <button key={method} onClick={() => setForm({ ...form, payment_method: method })}
-                      style={{
-                        padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                        border: form.payment_method === method ? '2px solid #00B894' : '1px solid #E9ECEF',
-                        background: form.payment_method === method ? '#E8F8F5' : '#fff',
-                        color: form.payment_method === method ? '#00B894' : '#6C757D'
-                      }}>
+                      style={{ padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: form.payment_method === method ? '2px solid #00B894' : '1px solid #E9ECEF', background: form.payment_method === method ? '#E8F8F5' : '#fff', color: form.payment_method === method ? '#00B894' : '#6C757D' }}>
                       {method === 'dinheiro' ? 'Dinheiro' : method === 'pix' ? 'Pix' : method === 'debito' ? 'Débito' : 'Crédito'}
                     </button>
                   ))}
