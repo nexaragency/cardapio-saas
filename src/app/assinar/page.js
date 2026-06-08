@@ -92,10 +92,34 @@ export default function Assinar() {
   }, [])
 
   async function handleSubscribe() {
-    if (!tenant || !user) return
-    if (!cpfCnpj.trim()) { setError('Informe o CPF ou CNPJ'); return }
-    setProcessing(true)
-    setError('')
+  if (!tenant || !user) return
+  if (!cpfCnpj.trim()) { setError('Informe o CPF ou CNPJ'); return }
+  setProcessing(true)
+  setError('')
+
+  const res = await fetch('/api/asaas/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tenant_id: tenant.id,
+      plan_name: selectedPlan,
+      email: user.email,
+      name: tenant.name,
+      cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+      phone: phone.replace(/\D/g, '')
+    })
+  })
+
+  const data = await res.json()
+
+  if (data.error) {
+    setError('Erro ao processar: ' + data.error)
+    setProcessing(false)
+    return
+  }
+
+  window.location.href = data.payment_url
+}
 
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',

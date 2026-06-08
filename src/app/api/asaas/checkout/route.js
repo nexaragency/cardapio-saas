@@ -8,6 +8,7 @@ const supabase = createClient(
 const ASAAS_API_URL = process.env.ASAAS_ENV === 'sandbox'
   ? 'https://api-sandbox.asaas.com/v3'
   : 'https://api.asaas.com/v3'
+
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY
 
 const PLANS = {
@@ -20,7 +21,7 @@ export async function POST(request) {
   try {
     const { tenant_id, plan_name, email, name, cpfCnpj, phone } = await request.json()
 
-    if (!tenant_id || !plan_name || !email || !name) {
+    if (!tenant_id || !plan_name || !email || !name || !cpfCnpj) {
       return Response.json({ error: 'Dados incompletos' }, { status: 400 })
     }
 
@@ -29,7 +30,7 @@ export async function POST(request) {
       return Response.json({ error: 'Plano invalido' }, { status: 400 })
     }
 
-    // Cria cliente no Asaas
+    // 1. Cria cliente no Asaas
     const customerRes = await fetch(ASAAS_API_URL + '/customers', {
       method: 'POST',
       headers: {
@@ -37,69 +38,63 @@ export async function POST(request) {
         'access_token': ASAAS_API_KEY
       },
       body: JSON.stringify({
-  name,
-  email,
-  cpfCnpj,
-  phone,
-  externalReference: tenant_id
-})
+        name,
+        email,
+        cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+        phone: phone ? phone.replace(/\D/g, '') : undefined,
+        externalReference: tenant_id
+      })
     })
 
     const customerText = await customerRes.text()
     let customer
-    try {
-      customer = JSON.parse(customerText)
-    } catch (e) {
-      return Response.json({ error: 'Resposta invalida do Asaas: ' + customerText }, { status: 500 })
-    }
+    try { customer = JSON.parse(customerText) }
+    catch (e) { return Response.json({ error: 'Resposta invalida do Asaas: ' + customerText }, { status: 500 }) }
 
     if (!customer.id) {
       return Response.json({ error: 'Erro cliente: ' + JSON.stringify(customer) }, { status: 500 })
     }
 
-    // Cria assinatura recorrente
+    // 2. Gera link de pagamento (cobrança avulsa para primeiro pagamento)
     const nextDueDate = new Date()
     nextDueDate.setDate(nextDueDate.getDate() + 7)
     const dueDateStr = nextDueDate.toISOString().split('T')[0]
 
-    const subRes = await fetch(ASAAS_API_URL + '/subscriptions', {
+    const chargeRes = await fetch(ASAAS_API_URL + '/paymentLinks', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'access_token': ASAAS_API_KEY
       },
       body: JSON.stringify({
-        customer: customer.id,
-        billingType: 'UNDEFINED',
+        name: plan.name,
+        description: 'Assinatura ' + plan.name + ' - QRDapio',
+        endDate: dueDateStr,
         value: plan.value,
-        nextDueDate: dueDateStr,
+        billingType: 'UNDEFINED',
+        chargeType: 'RECURRENT',
         cycle: 'MONTHLY',
-        description: plan.name,
         externalReference: tenant_id
       })
     })
 
-    const subText = await subRes.text()
-    let subscription
-    try {
-      subscription = JSON.parse(subText)
-    } catch (e) {
-      return Response.json({ error: 'Resposta invalida assinatura: ' + subText }, { status: 500 })
+    const chargeText = await chargeRes.text()
+    let charge
+    try { charge = JSON.parse(chargeText) }
+    catch (e) { return Response.json({ error: 'Resposta invalida cobranca: ' + chargeText }, { status: 500 }) }
+
+    if (!charge.url) {
+      return Response.json({ error: 'Erro link pagamento: ' + JSON.stringify(charge) }, { status: 500 })
     }
 
-    if (!subscription.id) {
-      return Response.json({ error: 'Erro assinatura: ' + JSON.stringify(subscription) }, { status: 500 })
-    }
-
-    // Atualiza subscriptions no Supabase
+    // 3. Atualiza subscription no Supabase
     await supabase.from('subscriptions').update({
       plan_name,
       asaas_customer_id: customer.id,
-      asaas_subscription_id: subscription.id,
-      status: 'active'
+      status: 'pending'
     }).eq('tenant_id', tenant_id)
 
-    return Response.json({ success: true, subscription_id: subscription.id })
+    return Response.json({ success: true, payment_url: charge.url })
 
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 })
