@@ -10,7 +10,12 @@ export default function Configuracoes() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [form, setForm] = useState({ name: '', phone: '', slug: '' })
+  const [bannerFile, setBannerFile] = useState(null)
+  const [bannerPreview, setBannerPreview] = useState(null)
+  const [form, setForm] = useState({
+    name: '', phone: '', slug: '', city: '',
+    open_time: '18:00', close_time: '23:00'
+  })
 
   useEffect(() => {
     async function loadData() {
@@ -23,21 +28,60 @@ export default function Configuracoes() {
         setForm({
           name: userData.tenants.name || '',
           phone: userData.tenants.phone || '',
-          slug: userData.tenants.slug || ''
+          slug: userData.tenants.slug || '',
+          city: userData.tenants.city || '',
+          open_time: userData.tenants.open_time || '18:00',
+          close_time: userData.tenants.close_time || '23:00'
         })
+        if (userData.tenants.banner_url) {
+          setBannerPreview(userData.tenants.banner_url)
+        }
       }
       setLoading(false)
     }
     loadData()
   }, [])
 
+  function handleBannerChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setBannerFile(file)
+    setBannerPreview(URL.createObjectURL(file))
+  }
+
+  async function uploadBanner(file) {
+    const ext = file.name.split('.').pop()
+    const filename = 'banner_' + tenantId + '.' + ext
+    const { error } = await supabase.storage
+      .from('produtos')
+      .upload(filename, file, { upsert: true })
+    if (error) return null
+    const { data } = supabase.storage.from('produtos').getPublicUrl(filename)
+    return data.publicUrl
+  }
+
   async function handleSave() {
     setSaving(true)
     setSuccess(false)
+
+    let bannerUrl = null
+    if (bannerFile) {
+      bannerUrl = await uploadBanner(bannerFile)
+    }
+
+    const update = {
+      name: form.name,
+      phone: form.phone,
+      city: form.city,
+      open_time: form.open_time,
+      close_time: form.close_time
+    }
+
+    if (bannerUrl) update.banner_url = bannerUrl
+
     const { error } = await supabase
-      .from('tenants')
-      .update({ name: form.name, phone: form.phone })
-      .eq('id', tenantId)
+      .from('tenants').update(update).eq('id', tenantId)
+
     if (!error) setSuccess(true)
     setSaving(false)
   }
@@ -47,10 +91,35 @@ export default function Configuracoes() {
   const cardapioUrl = 'https://cardapio-saas-virid.vercel.app/cardapio/' + form.slug
 
   return (
-    <div style={{ maxWidth: 580 }}>
+    <div style={{ maxWidth: 620 }}>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Configurações</h1>
         <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Gerencie os dados do seu restaurante</p>
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>BANNER DO CARDÁPIO</div>
+        <label style={{
+          display: 'block', cursor: 'pointer',
+          borderRadius: 10, overflow: 'hidden',
+          border: '2px dashed #E9ECEF',
+          background: '#F8F9FA',
+          marginBottom: 8
+        }}>
+          <input type="file" accept="image/*" onChange={handleBannerChange} style={{ display: 'none' }} />
+          {bannerPreview ? (
+            <img src={bannerPreview} alt="banner" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
+          ) : (
+            <div style={{ height: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <div style={{ fontSize: 32 }}>🖼️</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Clique para adicionar banner</div>
+              <div style={{ fontSize: 12, color: '#6C757D' }}>Recomendado: 1200x300px</div>
+            </div>
+          )}
+        </label>
+        {bannerPreview && (
+          <p style={{ fontSize: 12, color: '#6C757D', margin: 0 }}>Clique na imagem para trocar o banner</p>
+        )}
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
@@ -58,50 +127,55 @@ export default function Configuracoes() {
 
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Nome do restaurante</label>
-          <input
-            type="text"
-            value={form.name}
+          <input type="text" value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
             style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
 
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Cidade</label>
+          <input type="text" placeholder="Ex: Sarandi - PR" value={form.city}
+            onChange={e => setForm({ ...form, city: e.target.value })}
+            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+
         <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>
-            Número do WhatsApp
-          </label>
-          <input
-            type="text"
-            placeholder="Ex: 45999887766"
-            value={form.phone}
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Número do WhatsApp</label>
+          <input type="text" placeholder="Ex: 45999887766" value={form.phone}
             onChange={e => setForm({ ...form, phone: e.target.value })}
             style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
           />
-          <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6C757D' }}>
-            Formato: DDD + número. Ex: 45999887766
-          </p>
+          <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6C757D' }}>Formato: DDD + número. Ex: 45999887766</p>
         </div>
+      </div>
 
-        {success && (
-          <div style={{ background: '#E8F8F5', border: '1px solid #00B894', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#00B894', fontWeight: 600 }}>
-            Salvo com sucesso!
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>HORÁRIO DE FUNCIONAMENTO</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Abre às</label>
+            <input type="time" value={form.open_time}
+              onChange={e => setForm({ ...form, open_time: e.target.value })}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
+            />
           </div>
-        )}
-
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{ padding: '10px 24px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
-        >
-          {saving ? 'Salvando...' : 'Salvar alterações'}
-        </button>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Fecha às</label>
+            <input type="time" value={form.close_time}
+              onChange={e => setForm({ ...form, close_time: e.target.value })}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+        </div>
+        <p style={{ margin: '10px 0 0', fontSize: 12, color: '#6C757D' }}>
+          O cardápio mostrará automaticamente se o restaurante está aberto ou fechado.
+        </p>
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEU CARDÁPIO PÚBLICO</div>
-        <p style={{ fontSize: 13, color: '#6C757D', margin: '0 0 12px' }}>
-          Compartilhe este link ou use o QR Code para seus clientes acessarem o cardápio.
-        </p>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div style={{ flex: 1, padding: '10px 14px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 13, color: '#1A1A2E', wordBreak: 'break-all' }}>
             {cardapioUrl}
@@ -115,15 +189,19 @@ export default function Configuracoes() {
         </div>
       </div>
 
-      <div style={{ background: '#FFF8E8', border: '1px solid #FFD166', borderRadius: 12, padding: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#B8860B', letterSpacing: '0.8px', marginBottom: 8 }}>COMO CONFIGURAR O WHATSAPP</div>
-        <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#6C757D', lineHeight: 2 }}>
-          <li>Coloque o número do WhatsApp do restaurante no campo acima</li>
-          <li>Use o formato: DDD + número</li>
-          <li>Exemplo: 45999887766 para Paraná com DDD 45</li>
-          <li>Quando um cliente fizer um pedido, ele será enviado direto para esse número</li>
-        </ol>
-      </div>
+      {success && (
+        <div style={{ background: '#E8F8F5', border: '1px solid #00B894', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#00B894', fontWeight: 600 }}>
+          Salvo com sucesso!
+        </div>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        style={{ padding: '12px 32px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+      >
+        {saving ? 'Salvando...' : 'Salvar alterações'}
+      </button>
     </div>
   )
 }
