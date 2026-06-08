@@ -5,10 +5,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-const ASAAS_API_URL = process.env.ASAAS_ENV === 'sandbox'
-  ? 'https://sandbox.asaas.com/api/v3'
-  : 'https://api.asaas.com/api/v3'
-
+const ASAAS_API_URL = 'https://api.asaas.com/api/v3'
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY
 
 const PLANS = {
@@ -44,13 +41,23 @@ export async function POST(request) {
       })
     })
 
-    const customer = await customerRes.json()
+    const customerText = await customerRes.text()
+    let customer
+    try {
+      customer = JSON.parse(customerText)
+    } catch (e) {
+      return Response.json({ error: 'Resposta invalida do Asaas: ' + customerText }, { status: 500 })
+    }
 
     if (!customer.id) {
-  return Response.json({ error: 'Erro ao criar cliente no Asaas: ' + JSON.stringify(customer) }, { status: 500 })
-}
+      return Response.json({ error: 'Erro cliente: ' + JSON.stringify(customer) }, { status: 500 })
+    }
 
     // Cria assinatura recorrente
+    const nextDueDate = new Date()
+    nextDueDate.setDate(nextDueDate.getDate() + 7)
+    const dueDateStr = nextDueDate.toISOString().split('T')[0]
+
     const subRes = await fetch(ASAAS_API_URL + '/subscriptions', {
       method: 'POST',
       headers: {
@@ -59,19 +66,25 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         customer: customer.id,
-        billingType: 'CREDIT_CARD',
+        billingType: 'UNDEFINED',
         value: plan.value,
-        nextDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        nextDueDate: dueDateStr,
         cycle: 'MONTHLY',
         description: plan.name,
         externalReference: tenant_id
       })
     })
 
-    const subscription = await subRes.json()
+    const subText = await subRes.text()
+    let subscription
+    try {
+      subscription = JSON.parse(subText)
+    } catch (e) {
+      return Response.json({ error: 'Resposta invalida assinatura: ' + subText }, { status: 500 })
+    }
 
     if (!subscription.id) {
-      return Response.json({ error: 'Erro ao criar assinatura' }, { status: 500 })
+      return Response.json({ error: 'Erro assinatura: ' + JSON.stringify(subscription) }, { status: 500 })
     }
 
     // Atualiza subscriptions no Supabase
@@ -79,7 +92,7 @@ export async function POST(request) {
       plan_name,
       asaas_customer_id: customer.id,
       asaas_subscription_id: subscription.id,
-      status: 'trial'
+      status: 'active'
     }).eq('tenant_id', tenant_id)
 
     return Response.json({ success: true, subscription_id: subscription.id })
