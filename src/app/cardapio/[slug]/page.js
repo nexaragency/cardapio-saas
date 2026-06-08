@@ -304,9 +304,13 @@ export default function CardapioPublico({ params }) {
       <div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '16px 20px 0' }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
-            <div style={{ width: 80, height: 80, background: '#00B894', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 32, fontWeight: 700, flexShrink: 0, border: '4px solid #fff', marginTop: -40, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-              {tenant.name.charAt(0)}
-            </div>
+            <div style={{ width: 80, height: 80, borderRadius: 14, flexShrink: 0, border: '4px solid #fff', marginTop: -40, boxShadow: '0 4px 12px rgba(0,0,0,0.2)', overflow: 'hidden', background: '#00B894', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  {tenant.logo_url ? (
+    <img src={tenant.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+  ) : (
+    <span style={{ color: '#fff', fontSize: 32, fontWeight: 700 }}>{tenant.name.charAt(0)}</span>
+  )}
+</div>
             <div style={{ flex: 1, paddingTop: 8 }}>
               <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{tenant.name}</h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
