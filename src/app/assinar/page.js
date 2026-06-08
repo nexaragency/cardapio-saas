@@ -51,7 +51,6 @@ export default function Assinar() {
   const router = useRouter()
   const [tenant, setTenant] = useState(null)
   const [user, setUser] = useState(null)
-  const [subscription, setSubscription] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedPlan, setSelectedPlan] = useState('pro')
   const [processing, setProcessing] = useState(false)
@@ -76,8 +75,6 @@ export default function Assinar() {
           .from('subscriptions').select('*')
           .eq('tenant_id', userData.tenant_id).single()
 
-        setSubscription(sub)
-
         if (sub?.trial_ends_at) {
           const trialEnd = new Date(sub.trial_ends_at)
           const now = new Date()
@@ -92,34 +89,10 @@ export default function Assinar() {
   }, [])
 
   async function handleSubscribe() {
-  if (!tenant || !user) return
-  if (!cpfCnpj.trim()) { setError('Informe o CPF ou CNPJ'); return }
-  setProcessing(true)
-  setError('')
-
-  const res = await fetch('/api/asaas/checkout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      tenant_id: tenant.id,
-      plan_name: selectedPlan,
-      email: user.email,
-      name: tenant.name,
-      cpfCnpj: cpfCnpj.replace(/\D/g, ''),
-      phone: phone.replace(/\D/g, '')
-    })
-  })
-
-  const data = await res.json()
-
-  if (data.error) {
-    setError('Erro ao processar: ' + data.error)
-    setProcessing(false)
-    return
-  }
-
-  window.location.href = data.payment_url
-}
+    if (!tenant || !user) return
+    if (!cpfCnpj.trim()) { setError('Informe o CPF ou CNPJ'); return }
+    setProcessing(true)
+    setError('')
 
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',
@@ -142,7 +115,7 @@ export default function Assinar() {
       return
     }
 
-    router.push('/dashboard?assinatura=sucesso')
+    window.location.href = data.payment_url
   }
 
   if (loading) return (
