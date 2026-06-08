@@ -302,9 +302,9 @@ export default function CardapioPublico({ params }) {
 
       {/* HEADER DO RESTAURANTE */}
       <div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '16px 20px 0' }}>
-        <div style={{ maxWidth: 960, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
-            <div style={{ width: 80, height: 80, borderRadius: 14, flexShrink: 0, border: '4px solid #fff', marginTop: -40, boxShadow: '0 4px 12px rgba(0,0,0,0.2)', overflow: 'hidden', background: '#00B894', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <div style={{ maxWidth: 960, margin: '0 auto' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 16, marginTop: tenant.banner_url ? -44 : 0 }}>
+            <div style={{ width: 88, height: 88, borderRadius: 14, flexShrink: 0, border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', overflow: 'hidden', background: '#00B894', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
   {tenant.logo_url ? (
     <img src={tenant.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
   ) : (
