@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-const ASAAS_API_URL = 'https://api.asaas.com/api/v3'
+const ASAAS_API_URL = 'https://api.asaas.com/v3'
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY
 
 const PLANS = {
