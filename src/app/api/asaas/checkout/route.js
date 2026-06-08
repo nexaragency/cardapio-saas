@@ -16,7 +16,7 @@ const PLANS = {
 
 export async function POST(request) {
   try {
-    const { tenant_id, plan_name, email, name } = await request.json()
+    const { tenant_id, plan_name, email, name, cpfCnpj, phone } = await request.json()
 
     if (!tenant_id || !plan_name || !email || !name) {
       return Response.json({ error: 'Dados incompletos' }, { status: 400 })
@@ -35,10 +35,12 @@ export async function POST(request) {
         'access_token': ASAAS_API_KEY
       },
       body: JSON.stringify({
-        name,
-        email,
-        externalReference: tenant_id
-      })
+  name,
+  email,
+  cpfCnpj,
+  phone,
+  externalReference: tenant_id
+})
     })
 
     const customerText = await customerRes.text()

@@ -57,6 +57,8 @@ export default function Assinar() {
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const [daysLeft, setDaysLeft] = useState(null)
+  const [cpfCnpj, setCpfCnpj] = useState('')
+const [phone, setPhone] = useState('')
 
   useEffect(() => {
     async function loadData() {
@@ -92,27 +94,40 @@ export default function Assinar() {
   }, [])
 
   async function handleSubscribe() {
-    if (!tenant || !user) return
-    setProcessing(true)
-    setError('')
+  if (!tenant || !user) return
+  if (!cpfCnpj.trim()) { setError('Informe o CPF ou CNPJ'); return }
+  setProcessing(true)
+  setError('')
 
-    try {
-      const res = await fetch('/api/asaas/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant_id: tenant.id,
-          plan_name: selectedPlan,
-          email: user.email,
-          name: tenant.name
-        })
+  try {
+    const res = await fetch('/api/asaas/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenant_id: tenant.id,
+        plan_name: selectedPlan,
+        email: user.email,
+        name: tenant.name,
+        cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+        phone: phone.replace(/\D/g, '')
       })
+    })
 
-      const data = await res.json()
+    const data = await res.json()
 
-      if (data.error) {
-        setError('Erro ao processar: ' + data.error)
-        setProcessing(false)
+    if (data.error) {
+      setError('Erro ao processar: ' + data.error)
+      setProcessing(false)
+      return
+    }
+
+    router.push('/dashboard?assinatura=sucesso')
+
+  } catch (err) {
+    setError('Erro ao conectar. Tente novamente.')
+    setProcessing(false)
+  }
+}
         return
       }
 
@@ -201,6 +216,23 @@ export default function Assinar() {
         </div>
 
         <div style={{ maxWidth: 400, margin: '0 auto' }}>
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+  <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEUS DADOS</div>
+  <input
+    type="text"
+    placeholder="CPF ou CNPJ *"
+    value={cpfCnpj}
+    onChange={e => setCpfCnpj(e.target.value)}
+    style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+  />
+  <input
+    type="text"
+    placeholder="Telefone (com DDD)"
+    value={phone}
+    onChange={e => setPhone(e.target.value)}
+    style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
+  />
+</div>
           {error && (
             <div style={{ background: '#FFF5F5', border: '1px solid #e53935', borderRadius: 8, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#e53935' }}>
               {error}
