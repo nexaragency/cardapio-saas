@@ -13,7 +13,7 @@ export default function Configuracoes() {
   const [bannerFile, setBannerFile] = useState(null)
   const [bannerPreview, setBannerPreview] = useState(null)
   const [logoFile, setLogoFile] = useState(null)
-const [logoPreview, setLogoPreview] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
   const [form, setForm] = useState({
     name: '', phone: '', slug: '', city: '',
     open_time: '18:00', close_time: '23:00'
@@ -35,12 +35,8 @@ const [logoPreview, setLogoPreview] = useState(null)
           open_time: userData.tenants.open_time || '18:00',
           close_time: userData.tenants.close_time || '23:00'
         })
-        if (userData.tenants.banner_url) {
-          setBannerPreview(userData.tenants.banner_url)
-        }
-        if (userData.tenants.logo_url) {
-  setLogoPreview(userData.tenants.logo_url)
-}
+        if (userData.tenants.banner_url) setBannerPreview(userData.tenants.banner_url)
+        if (userData.tenants.logo_url) setLogoPreview(userData.tenants.logo_url)
       }
       setLoading(false)
     }
@@ -54,46 +50,27 @@ const [logoPreview, setLogoPreview] = useState(null)
     setBannerPreview(URL.createObjectURL(file))
   }
 
-  async function uploadBanner(file) {
+  function handleLogoChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setLogoFile(file)
+    setLogoPreview(URL.createObjectURL(file))
+  }
+
+  async function uploadImage(file, filename) {
     const ext = file.name.split('.').pop()
-    const filename = 'banner_' + tenantId + '.' + ext
+    const fullname = filename + '_' + tenantId + '.' + ext
     const { error } = await supabase.storage
       .from('produtos')
-      .upload(filename, file, { upsert: true })
+      .upload(fullname, file, { upsert: true })
     if (error) return null
-    const { data } = supabase.storage.from('produtos').getPublicUrl(filename)
+    const { data } = supabase.storage.from('produtos').getPublicUrl(fullname)
     return data.publicUrl
   }
-  async function uploadLogo(file) {
-  const ext = file.name.split('.').pop()
-  const filename = 'logo_' + tenantId + '.' + ext
-  const { error } = await supabase.storage
-    .from('produtos')
-    .upload(filename, file, { upsert: true })
-  if (error) return null
-  const { data } = supabase.storage.from('produtos').getPublicUrl(filename)
-  return data.publicUrl
-}
-
-function handleLogoChange(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  setLogoFile(file)
-  setLogoPreview(URL.createObjectURL(file))
-}
 
   async function handleSave() {
     setSaving(true)
     setSuccess(false)
-
-    let bannerUrl = null
-    if (bannerFile) {
-      bannerUrl = await uploadBanner(bannerFile)
-    }
-    let logoUrl = null
-if (logoFile) {
-  logoUrl = await uploadLogo(logoFile)
-}
 
     const update = {
       name: form.name,
@@ -103,8 +80,15 @@ if (logoFile) {
       close_time: form.close_time
     }
 
-    if (bannerUrl) update.banner_url = bannerUrl
-    if (logoUrl) update.logo_url = logoUrl
+    if (bannerFile) {
+      const url = await uploadImage(bannerFile, 'banner')
+      if (url) update.banner_url = url
+    }
+
+    if (logoFile) {
+      const url = await uploadImage(logoFile, 'logo')
+      if (url) update.logo_url = url
+    }
 
     const { error } = await supabase
       .from('tenants').update(update).eq('id', tenantId)
@@ -126,32 +110,7 @@ if (logoFile) {
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>BANNER DO CARDÁPIO</div>
-        <label style={{
-          display: 'block', cursor: 'pointer',
-          borderRadius: 10, overflow: 'hidden',
-          border: '2px dashed #E9ECEF',
-          background: '#F8F9FA',
-          marginBottom: 8
-        }}>
-          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
-  <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>LOGO DO RESTAURANTE</div>
-  <label style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
-    <input type="file" accept="image/*" onChange={handleLogoChange} style={{ display: 'none' }} />
-    {logoPreview ? (
-      <img src={logoPreview} alt="logo" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 12, border: '2px solid #E9ECEF' }} />
-    ) : (
-      <div style={{ width: 80, height: 80, background: '#F8F9FA', borderRadius: 12, border: '2px dashed #E9ECEF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-        🖼️
-      </div>
-    )}
-    <div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 4 }}>
-        {logoPreview ? 'Clique para trocar a logo' : 'Clique para adicionar a logo'}
-      </div>
-      <div style={{ fontSize: 12, color: '#6C757D' }}>Recomendado: imagem quadrada 200x200px</div>
-    </div>
-  </label>
-</div>
+        <label style={{ display: 'block', cursor: 'pointer', borderRadius: 10, overflow: 'hidden', border: '2px dashed #E9ECEF', background: '#F8F9FA', marginBottom: 8 }}>
           <input type="file" accept="image/*" onChange={handleBannerChange} style={{ display: 'none' }} />
           {bannerPreview ? (
             <img src={bannerPreview} alt="banner" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
@@ -161,39 +120,50 @@ if (logoFile) {
               <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Clique para adicionar banner</div>
               <div style={{ fontSize: 12, color: '#6C757D' }}>Recomendado: 1200x300px</div>
             </div>
-            
           )}
         </label>
-        {bannerPreview && (
-          <p style={{ fontSize: 12, color: '#6C757D', margin: 0 }}>Clique na imagem para trocar o banner</p>
-        )}
+        {bannerPreview && <p style={{ fontSize: 12, color: '#6C757D', margin: 0 }}>Clique na imagem para trocar o banner</p>}
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>LOGO DO RESTAURANTE</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
+          <input type="file" accept="image/*" onChange={handleLogoChange} style={{ display: 'none' }} />
+          {logoPreview ? (
+            <img src={logoPreview} alt="logo" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 12, border: '2px solid #E9ECEF' }} />
+          ) : (
+            <div style={{ width: 80, height: 80, background: '#F8F9FA', borderRadius: 12, border: '2px dashed #E9ECEF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
+              🖼️
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 4 }}>
+              {logoPreview ? 'Clique para trocar a logo' : 'Clique para adicionar a logo'}
+            </div>
+            <div style={{ fontSize: 12, color: '#6C757D' }}>Recomendado: imagem quadrada 200x200px</div>
+          </div>
+        </label>
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>DADOS DO RESTAURANTE</div>
-
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Nome do restaurante</label>
           <input type="text" value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
-            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
-          />
+            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
         </div>
-
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Cidade</label>
           <input type="text" placeholder="Ex: Sarandi - PR" value={form.city}
             onChange={e => setForm({ ...form, city: e.target.value })}
-            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
-          />
+            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
         </div>
-
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Número do WhatsApp</label>
           <input type="text" placeholder="Ex: 45999887766" value={form.phone}
             onChange={e => setForm({ ...form, phone: e.target.value })}
-            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
-          />
+            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
           <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6C757D' }}>Formato: DDD + número. Ex: 45999887766</p>
         </div>
       </div>
@@ -205,15 +175,13 @@ if (logoFile) {
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Abre às</label>
             <input type="time" value={form.open_time}
               onChange={e => setForm({ ...form, open_time: e.target.value })}
-              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
-            />
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Fecha às</label>
             <input type="time" value={form.close_time}
               onChange={e => setForm({ ...form, close_time: e.target.value })}
-              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
-            />
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
           </div>
         </div>
         <p style={{ margin: '10px 0 0', fontSize: 12, color: '#6C757D' }}>
@@ -227,10 +195,8 @@ if (logoFile) {
           <div style={{ flex: 1, padding: '10px 14px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 13, color: '#1A1A2E', wordBreak: 'break-all' }}>
             {cardapioUrl}
           </div>
-          <button
-            onClick={() => navigator.clipboard.writeText(cardapioUrl)}
-            style={{ padding: '10px 16px', background: '#F0F4FF', color: '#4A6CF7', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}
-          >
+          <button onClick={() => navigator.clipboard.writeText(cardapioUrl)}
+            style={{ padding: '10px 16px', background: '#F0F4FF', color: '#4A6CF7', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
             Copiar link
           </button>
         </div>
@@ -242,11 +208,8 @@ if (logoFile) {
         </div>
       )}
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        style={{ padding: '12px 32px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
-      >
+      <button onClick={handleSave} disabled={saving}
+        style={{ padding: '12px 32px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
         {saving ? 'Salvando...' : 'Salvar alterações'}
       </button>
     </div>
