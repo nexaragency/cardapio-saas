@@ -292,17 +292,19 @@ export default function CardapioPublico({ params }) {
     <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
 
       {/* BANNER */}
-      {tenant.banner_url && (
-        <div style={{ width: '100%', height: 220, overflow: 'hidden', position: 'relative' }}>
-          <img src={tenant.banner_url} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
-      )}
+<div style={{ width: '100%', height: 300, overflow: 'hidden', position: 'relative', background: '#1A1A2E' }}>
+  {tenant.banner_url ? (
+    <img src={tenant.banner_url} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+  ) : (
+    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #00B894, #00856F)' }} />
+  )}
+</div>
 
       {/* HEADER DO RESTAURANTE */}
       <div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '16px 20px 0' }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
-            <div style={{ width: 72, height: 72, background: '#00B894', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 28, fontWeight: 700, flexShrink: 0, border: '3px solid #fff', marginTop: tenant.banner_url ? -36 : 0, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+            <div style={{ width: 80, height: 80, background: '#00B894', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 32, fontWeight: 700, flexShrink: 0, border: '4px solid #fff', marginTop: -40, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
               {tenant.name.charAt(0)}
             </div>
             <div style={{ flex: 1, paddingTop: 8 }}>
