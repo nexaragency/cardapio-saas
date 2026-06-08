@@ -58,7 +58,7 @@ export default function Assinar() {
   const [error, setError] = useState('')
   const [daysLeft, setDaysLeft] = useState(null)
   const [cpfCnpj, setCpfCnpj] = useState('')
-const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState('')
 
   useEffect(() => {
     async function loadData() {
@@ -73,10 +73,8 @@ const [phone, setPhone] = useState('')
         setTenant(userData.tenants)
 
         const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('tenant_id', userData.tenant_id)
-          .single()
+          .from('subscriptions').select('*')
+          .eq('tenant_id', userData.tenant_id).single()
 
         setSubscription(sub)
 
@@ -94,12 +92,11 @@ const [phone, setPhone] = useState('')
   }, [])
 
   async function handleSubscribe() {
-  if (!tenant || !user) return
-  if (!cpfCnpj.trim()) { setError('Informe o CPF ou CNPJ'); return }
-  setProcessing(true)
-  setError('')
+    if (!tenant || !user) return
+    if (!cpfCnpj.trim()) { setError('Informe o CPF ou CNPJ'); return }
+    setProcessing(true)
+    setError('')
 
-  try {
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -122,21 +119,6 @@ const [phone, setPhone] = useState('')
     }
 
     router.push('/dashboard?assinatura=sucesso')
-
-  } catch (err) {
-    setError('Erro ao conectar. Tente novamente.')
-    setProcessing(false)
-  }
-}
-        return
-      }
-
-      router.push('/dashboard?assinatura=sucesso')
-
-    } catch (err) {
-      setError('Erro ao conectar. Tente novamente.')
-      setProcessing(false)
-    }
   }
 
   if (loading) return (
@@ -151,9 +133,7 @@ const [phone, setPhone] = useState('')
 
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <div style={{ width: 48, height: 48, background: '#00B894', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff', fontSize: 22, fontWeight: 700 }}>Q</div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E', margin: '0 0 10px' }}>
-            Escolha seu plano
-          </h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E', margin: '0 0 10px' }}>Escolha seu plano</h1>
           {daysLeft !== null && daysLeft > 0 && (
             <div style={{ display: 'inline-block', background: '#FFF8E8', border: '1px solid #FFD166', borderRadius: 20, padding: '6px 16px', fontSize: 13, color: '#B8860B', fontWeight: 600 }}>
               {daysLeft === 1 ? 'Último dia de trial!' : daysLeft + ' dias de trial restantes'}
@@ -174,11 +154,7 @@ const [phone, setPhone] = useState('')
               style={{
                 background: '#fff',
                 border: selectedPlan === plan.id ? '2px solid #00B894' : '1px solid #E9ECEF',
-                borderRadius: 16,
-                padding: 28,
-                cursor: 'pointer',
-                position: 'relative',
-                transition: 'all 0.15s'
+                borderRadius: 16, padding: 28, cursor: 'pointer', position: 'relative'
               }}
             >
               {plan.highlight && (
@@ -186,17 +162,14 @@ const [phone, setPhone] = useState('')
                   MAIS POPULAR
                 </div>
               )}
-
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', marginBottom: 4 }}>{plan.name}</div>
                 <div style={{ fontSize: 12, color: '#6C757D' }}>{plan.description}</div>
               </div>
-
               <div style={{ marginBottom: 24 }}>
                 <span style={{ fontSize: 36, fontWeight: 700, color: '#1A1A2E' }}>R$ {plan.price}</span>
                 <span style={{ fontSize: 13, color: '#6C757D' }}>/mês</span>
               </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {plan.features.map(feature => (
                   <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -205,7 +178,6 @@ const [phone, setPhone] = useState('')
                   </div>
                 ))}
               </div>
-
               {selectedPlan === plan.id && (
                 <div style={{ marginTop: 20, padding: '8px', background: '#E8F8F5', borderRadius: 8, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#00B894' }}>
                   Plano selecionado
@@ -217,22 +189,23 @@ const [phone, setPhone] = useState('')
 
         <div style={{ maxWidth: 400, margin: '0 auto' }}>
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 20 }}>
-  <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEUS DADOS</div>
-  <input
-    type="text"
-    placeholder="CPF ou CNPJ *"
-    value={cpfCnpj}
-    onChange={e => setCpfCnpj(e.target.value)}
-    style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-  />
-  <input
-    type="text"
-    placeholder="Telefone (com DDD)"
-    value={phone}
-    onChange={e => setPhone(e.target.value)}
-    style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
-  />
-</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEUS DADOS</div>
+            <input
+              type="text"
+              placeholder="CPF ou CNPJ *"
+              value={cpfCnpj}
+              onChange={e => setCpfCnpj(e.target.value)}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+            />
+            <input
+              type="text"
+              placeholder="Telefone com DDD (opcional)"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+
           {error && (
             <div style={{ background: '#FFF5F5', border: '1px solid #e53935', borderRadius: 8, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#e53935' }}>
               {error}
@@ -258,7 +231,6 @@ const [phone, setPhone] = useState('')
             Voltar ao painel
           </button>
         </div>
-
       </div>
     </div>
   )
