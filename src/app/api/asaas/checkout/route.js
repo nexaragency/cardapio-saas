@@ -7,7 +7,7 @@ const supabase = createClient(
 
 const ASAAS_API_URL = process.env.ASAAS_ENV === 'sandbox'
   ? 'https://sandbox.asaas.com/api/v3'
-  : 'https://api.asaas.com/v3'
+  : 'https://api.asaas.com/api/v3'
 
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY
 
@@ -47,8 +47,8 @@ export async function POST(request) {
     const customer = await customerRes.json()
 
     if (!customer.id) {
-      return Response.json({ error: 'Erro ao criar cliente no Asaas' }, { status: 500 })
-    }
+  return Response.json({ error: 'Erro ao criar cliente no Asaas: ' + JSON.stringify(customer) }, { status: 500 })
+}
 
     // Cria assinatura recorrente
     const subRes = await fetch(ASAAS_API_URL + '/subscriptions', {
