@@ -55,7 +55,7 @@ export async function POST(request) {
       return Response.json({ error: 'Erro cliente: ' + JSON.stringify(customer) }, { status: 500 })
     }
 
-    // 2. Gera link de pagamento (cobrança avulsa para primeiro pagamento)
+    // 2. Gera link de pagamento recorrente
     const nextDueDate = new Date()
     nextDueDate.setDate(nextDueDate.getDate() + 7)
     const dueDateStr = nextDueDate.toISOString().split('T')[0]
@@ -74,6 +74,7 @@ export async function POST(request) {
         billingType: 'UNDEFINED',
         chargeType: 'RECURRENT',
         cycle: 'MONTHLY',
+        dueDateLimitDays: 3,
         externalReference: tenant_id
       })
     })
