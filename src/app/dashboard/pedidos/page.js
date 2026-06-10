@@ -69,40 +69,74 @@ export default function Pedidos() {
   }
 
   function handlePrint(order) {
-    const items = order.order_items.map(i =>
-      i.quantity + 'x ' + i.product_name + ' — R$ ' + Number(i.subtotal).toFixed(2)
-    ).join('\n')
+  const isSalao = order.order_type === 'salao'
+  const items = order.order_items.map(i =>
+    i.quantity + 'x ' + i.product_name.padEnd(20).substring(0, 20) + 'R$' + Number(i.subtotal).toFixed(2).padStart(7)
+  ).join('\n')
 
-    const isSalao = order.order_type === 'salao'
+  const linha = '================================'
+  const subtotal = Number(order.total) - Number(order.delivery_fee)
 
-    const content = `
-PEDIDO #${order.id.slice(-6).toUpperCase()}
-${new Date(order.created_at).toLocaleString('pt-BR')}
-================================
+  const conteudo = `
+${linha}
+       NEXAR CARDAPIO DIGITAL
+${linha}
+Pedido: #${order.id.slice(-6).toUpperCase()}
+Data: ${new Date(order.created_at).toLocaleString('pt-BR')}
+${linha}
 ${isSalao ? 'MESA: ' + order.table_number : 'CLIENTE: ' + order.customer_name}
-${isSalao ? '' : 'TELEFONE: ' + (order.customer_phone || '-')}
-${isSalao ? '' : 'ENDERECO: ' + order.customer_address}
+${isSalao ? '' : 'FONE: ' + (order.customer_phone || '-')}
+${isSalao ? '' : 'END: ' + (order.customer_address || '-')}
 ${isSalao ? '' : 'BAIRRO: ' + (order.neighborhood || '-')}
-${isSalao ? '' : 'CIDADE: ' + (order.city || '-')}
-================================
+${linha}
 ITENS:
 ${items}
-================================
-${isSalao ? '' : 'Subtotal: R$ ' + (Number(order.total) - Number(order.delivery_fee)).toFixed(2)}
-${isSalao ? '' : 'Taxa entrega: R$ ' + Number(order.delivery_fee).toFixed(2)}
-TOTAL: R$ ${Number(order.total).toFixed(2)}
-================================
-${isSalao ? 'PAGAMENTO: A definir no salao' : 'PAGAMENTO: ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
-${!isSalao && order.change_for ? 'Troco para: R$ ' + Number(order.change_for).toFixed(2) : ''}
-    `.trim()
+${linha}
+${isSalao ? '' : 'Subtotal:         R$' + subtotal.toFixed(2).padStart(7)}
+${isSalao ? '' : 'Entrega:          R$' + Number(order.delivery_fee).toFixed(2).padStart(7)}
+TOTAL:            R$${Number(order.total).toFixed(2).padStart(7)}
+${linha}
+${isSalao ? 'PAGAMENTO: A definir no salao' : 'PGTO: ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
+${!isSalao && order.change_for ? 'TROCO PARA: R$' + Number(order.change_for).toFixed(2) : ''}
+${linha}
+    Obrigado pela preferencia!
+${linha}
+`.trim()
 
-    const win = window.open('', '_blank')
-    win.document.write('<pre style="font-family:monospace;font-size:14px;padding:20px">' + content + '</pre>')
-    win.document.close()
-    win.print()
+  const win = window.open('', '_blank')
+  win.document.write(`
+    <html>
+      <head>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            width: 80mm;
+            margin: 0 auto;
+            padding: 4px;
+          }
+          pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.4;
+          }
+          @media print {
+            body { width: 80mm; }
+            @page { margin: 0; size: 80mm auto; }
+          }
+        </style>
+      </head>
+      <body>
+        <pre>${conteudo}</pre>
+      </body>
+    </html>
+  `)
+  win.document.close()
+  setTimeout(() => { win.print(); win.close() }, 300)
 
-    if (order.status === 'novo') handleNextStatus(order)
-  }
+  if (order.status === 'novo') handleNextStatus(order)
+}
 
   const filteredOrders = filter === 'todos'
     ? orders
