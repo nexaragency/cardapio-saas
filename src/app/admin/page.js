@@ -1,5 +1,6 @@
 'use client'
 
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -22,7 +23,12 @@ const STATUS_COLOR = {
 const PRICES = { starter: 59, pro: 99, premium: 149 }
 
 export default function AdminPage() {
-  const [authenticated, setAuthenticated] = useState(false)
+  const [authenticated, setAuthenticated] = useState(() => {
+  if (typeof window !== 'undefined') {
+    return sessionStorage.getItem('nexar_admin') === 'true'
+  }
+  return false
+})
   const [password, setPassword] = useState('')
   const [activeMenu, setActiveMenu] = useState('convites')
   const [invites, setInvites] = useState([])
@@ -32,14 +38,21 @@ export default function AdminPage() {
   const [clientes, setClientes] = useState([])
 
   function handleLogin() {
-    if (password === ADMIN_PASSWORD) {
-      setAuthenticated(true)
-      loadInvites()
-      loadClientes()
-    } else {
-      alert('Senha incorreta')
-    }
+  if (password === ADMIN_PASSWORD) {
+    sessionStorage.setItem('nexar_admin', 'true')
+    setAuthenticated(true)
+    loadInvites()
+    loadClientes()
+  } else {
+    alert('Senha incorreta')
   }
+}
+useEffect(() => {
+  if (authenticated) {
+    loadInvites()
+    loadClientes()
+  }
+}, [authenticated])
 
   async function loadInvites() {
     const { data } = await supabase.from('invites').select('*').order('created_at', { ascending: false })
