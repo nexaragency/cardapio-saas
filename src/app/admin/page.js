@@ -8,7 +8,6 @@ const ADMIN_PASSWORD = 'nexar@admin2024'
 const MENU_ITEMS = [
   { id: 'convites', label: 'Convites' },
   { id: 'clientes', label: 'Clientes' },
-  { id: 'pedidos', label: 'Pedidos' },
   { id: 'relatorios', label: 'Relatórios' },
 ]
 
@@ -344,73 +343,85 @@ export default function AdminPage() {
   </div>
 )}
 
-        {/* PEDIDOS */}
-        {activeMenu === 'pedidos' && (
-          <div style={{ maxWidth: 900 }}>
-            <div style={{ marginBottom: 32 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Pedidos</h1>
-              <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Últimos 50 pedidos de todos os clientes</p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {pedidos.map(pedido => (
-                <div key={pedido.id} style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#1A1A2E' }}>
-                      {'#' + pedido.id.slice(-6).toUpperCase() + ' — ' + pedido.customer_name}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>
-                      {pedido.tenants?.name + ' · ' + new Date(pedido.created_at).toLocaleString('pt-BR')}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#00B894' }}>R$ {Number(pedido.total).toFixed(2)}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 10, background: pedido.status === 'entregue' ? '#F5F5F5' : '#E8F8F5', color: pedido.status === 'entregue' ? '#616161' : '#00B894' }}>
-                      {pedido.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* RELATÓRIOS */}
         {activeMenu === 'relatorios' && (
-          <div style={{ maxWidth: 800 }}>
-            <div style={{ marginBottom: 32 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Relatórios</h1>
-              <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Visão geral de todos os clientes</p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 32 }}>
-              <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
-                <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>CLIENTES ATIVOS</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E' }}>{clientes.filter(c => c.subscriptions?.[0]?.status === 'active' || c.subscriptions?.[0]?.status === 'trial').length}</div>
-              </div>
-              <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
-                <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>PEDIDOS ENTREGUES</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E' }}>{relatorios.pedidos}</div>
-              </div>
-              <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
-                <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>FATURAMENTO TOTAL</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#00B894' }}>{'R$ ' + relatorios.total.toFixed(2)}</div>
-              </div>
-            </div>
-            <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>CLIENTES POR PLANO</div>
-              {['starter', 'pro', 'premium'].map(p => {
-                const count = clientes.filter(c => c.subscriptions?.[0]?.plan_name === p).length
-                return (
-                  <div key={p} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #F8F9FA' }}>
-                    <span style={{ fontSize: 14, color: '#1A1A2E', fontWeight: 500, textTransform: 'capitalize' }}>{p}</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#00B894' }}>{count} cliente(s)</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-      </main>
+  <div style={{ maxWidth: 800 }}>
+    <div style={{ marginBottom: 32 }}>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Relatórios Nexar</h1>
+      <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Visão financeira do seu SaaS</p>
     </div>
-  )
-}
+
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 32 }}>
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
+        <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>ATIVOS</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: '#00B894' }}>
+          {clientes.filter(c => c.subscriptions?.[0]?.status === 'active').length}
+        </div>
+      </div>
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
+        <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>TRIAL</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E' }}>
+          {clientes.filter(c => c.subscriptions?.[0]?.status === 'trial').length}
+        </div>
+      </div>
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
+        <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>PENDENTE</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: '#B8860B' }}>
+          {clientes.filter(c => c.subscriptions?.[0]?.status === 'pending').length}
+        </div>
+      </div>
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
+        <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>INADIMPLENTE</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: '#e53935' }}>
+          {clientes.filter(c => c.subscriptions?.[0]?.status === 'overdue' || c.subscriptions?.[0]?.status === 'cancelled').length}
+        </div>
+      </div>
+    </div>
+
+    <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>FATURAMENTO MENSAL ESTIMADO</div>
+      {['starter', 'pro', 'premium'].map(p => {
+        const PRICES = { starter: 59, pro: 99, premium: 149 }
+        const ativos = clientes.filter(c => c.subscriptions?.[0]?.plan_name === p && c.subscriptions?.[0]?.status === 'active').length
+        const subtotal = ativos * PRICES[p]
+        return (
+          <div key={p} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #F8F9FA' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 14, color: '#1A1A2E', fontWeight: 500, textTransform: 'capitalize' }}>{p}</span>
+              <span style={{ fontSize: 12, color: '#6C757D' }}>{ativos + ' cliente(s) × R$ ' + PRICES[p]}</span>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>R$ {subtotal.toFixed(2)}</span>
+          </div>
+        )
+      })}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 0', marginTop: 4 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: '#1A1A2E' }}>Total estimado/mês</span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: '#00B894' }}>
+          {'R$ ' + (['starter', 'pro', 'premium'].reduce((sum, p) => {
+            const PRICES = { starter: 59, pro: 99, premium: 149 }
+            const ativos = clientes.filter(c => c.subscriptions?.[0]?.plan_name === p && c.subscriptions?.[0]?.status === 'active').length
+            return sum + (ativos * PRICES[p])
+          }, 0)).toFixed(2)}
+        </span>
+      </div>
+    </div>
+
+    <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>CLIENTES INADIMPLENTES</div>
+      {clientes.filter(c => c.subscriptions?.[0]?.status === 'overdue' || c.subscriptions?.[0]?.status === 'cancelled').length === 0 && (
+        <p style={{ color: '#adb5bd', fontSize: 13 }}>Nenhum cliente inadimplente.</p>
+      )}
+      {clientes.filter(c => c.subscriptions?.[0]?.status === 'overdue' || c.subscriptions?.[0]?.status === 'cancelled').map(cliente => (
+        <div key={cliente.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #F8F9FA' }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>{cliente.name}</div>
+            <div style={{ fontSize: 12, color: '#6C757D' }}>{cliente.users?.[0]?.email}</div>
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10, background: '#FFF5F5', color: '#e53935', textTransform: 'capitalize' }}>
+            {cliente.subscriptions?.[0]?.status}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
