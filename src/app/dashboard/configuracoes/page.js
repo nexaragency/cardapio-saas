@@ -1,10 +1,13 @@
 'use client'
 
+import { usePlan } from '@/lib/usePlan'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 export default function Configuracoes() {
+  const { hasAccess } = usePlan()
+const [primaryColor, setPrimaryColor] = useState('#00B894')
   const router = useRouter()
   const [tenantId, setTenantId] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -34,6 +37,7 @@ export default function Configuracoes() {
           city: userData.tenants.city || '',
           open_time: userData.tenants.open_time || '18:00',
           close_time: userData.tenants.close_time || '23:00'
+          setPrimaryColor userData.tenants.primary_color || '#00B894')
         })
         if (userData.tenants.banner_url) setBannerPreview(userData.tenants.banner_url)
         if (userData.tenants.logo_url) setLogoPreview(userData.tenants.logo_url)
@@ -73,12 +77,13 @@ export default function Configuracoes() {
     setSuccess(false)
 
     const update = {
-      name: form.name,
-      phone: form.phone,
-      city: form.city,
-      open_time: form.open_time,
-      close_time: form.close_time
-    }
+  name: form.name,
+  phone: form.phone,
+  city: form.city,
+  open_time: form.open_time,
+  close_time: form.close_time,
+  primary_color: primaryColor
+}
 
     if (bannerFile) {
       const url = await uploadImage(bannerFile, 'banner')
@@ -170,6 +175,39 @@ export default function Configuracoes() {
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>HORÁRIO DE FUNCIONAMENTO</div>
+        <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+  <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>
+    COR DO CARDÁPIO
+    {!hasAccess('cores') && (
+      <span style={{ marginLeft: 8, fontSize: 11, background: '#F0F4FF', color: '#4A6CF7', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>PREMIUM</span>
+    )}
+  </div>
+  {hasAccess('cores') ? (
+    <div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+        <input type="color" value={primaryColor}
+          onChange={e => setPrimaryColor(e.target.value)}
+          style={{ width: 48, height: 48, borderRadius: 8, border: '1px solid #E9ECEF', cursor: 'pointer', padding: 2 }} />
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>Cor principal</div>
+          <div style={{ fontSize: 12, color: '#6C757D' }}>{primaryColor}</div>
+        </div>
+        <div style={{ width: 48, height: 48, borderRadius: 8, background: primaryColor }} />
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {['#00B894', '#FF6B6B', '#4A6CF7', '#FF9F43', '#1A1A2E', '#6C5CE7', '#00CEC9', '#E84393'].map(color => (
+          <button key={color} onClick={() => setPrimaryColor(color)}
+            style={{ width: 32, height: 32, borderRadius: '50%', background: color, border: primaryColor === color ? '3px solid #1A1A2E' : '2px solid transparent', cursor: 'pointer' }} />
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <p style={{ color: '#6C757D', fontSize: 13, margin: 0 }}>Disponível no plano Premium</p>
+      <a href="/assinar" style={{ fontSize: 13, color: '#00B894', fontWeight: 600, textDecoration: 'none' }}>Fazer upgrade →</a>
+    </div>
+  )}
+</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Abre às</label>
