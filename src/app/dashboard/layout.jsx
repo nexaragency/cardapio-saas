@@ -24,10 +24,10 @@ export default function DashboardLayout({ children }) {
   }, [])
 
   useEffect(() => {
-    if (!planLoading && !canAccess()) {
-      router.push('/assinar')
-    }
-  }, [planLoading, status])
+  if (!planLoading && status !== null && !canAccess()) {
+    router.push('/assinar')
+  }
+}, [planLoading, status])
 
   async function handleLogout() {
     await supabase.auth.signOut()
