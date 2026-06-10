@@ -249,10 +249,8 @@ export default function CardapioPublico({ params }) {
                 <span style={{ color: '#00B894' }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
               </div>
             </div>
-            <button
-              onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
-              style={{ width: '100%', padding: '12px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
-            >
+            <button onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
+              style={{ width: '100%', padding: '12px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
               Fazer novo pedido
             </button>
           </div>
@@ -268,7 +266,6 @@ export default function CardapioPublico({ params }) {
             Pedido #{currentOrder.id.slice(-6).toUpperCase()}
           </p>
         </div>
-
         <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 16px' }}>
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 28, marginBottom: 16, textAlign: 'center' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>
@@ -277,7 +274,6 @@ export default function CardapioPublico({ params }) {
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A2E', margin: '0 0 8px' }}>{STATUS_LABEL[currentOrder.status]}</h2>
             <p style={{ color: '#6C757D', fontSize: 14, margin: 0 }}>{STATUS_DESC[currentOrder.status]}</p>
           </div>
-
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
             <div style={{ height: 4, background: '#E9ECEF', borderRadius: 2, marginBottom: 12 }}>
               <div style={{ height: 4, background: '#00B894', borderRadius: 2, width: (statusIndex / (STATUS_FLOW.length - 1) * 100) + '%', transition: 'width 0.5s ease' }} />
@@ -290,7 +286,6 @@ export default function CardapioPublico({ params }) {
               ))}
             </div>
           </div>
-
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 12 }}>RESUMO</div>
             {currentOrder.order_items && currentOrder.order_items.map(item => (
@@ -304,7 +299,6 @@ export default function CardapioPublico({ params }) {
               <span style={{ color: '#00B894' }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
             </div>
           </div>
-
           {isDelivered ? (
             <button onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
               style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
@@ -376,6 +370,39 @@ export default function CardapioPublico({ params }) {
               style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 10, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', background: '#fff', boxSizing: 'border-box' }} />
             <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', fontSize: 18 }}>🔍</span>
           </div>
+
+          {products.filter(p => p.featured).length > 0 && !searchTerm && (
+            <div style={{ marginBottom: 28 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', marginBottom: 14 }}>
+                ⭐ Destaques
+              </h2>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+                {products.filter(p => p.featured).map(product => (
+                  <div key={product.id} style={{ minWidth: 200, background: '#fff', borderRadius: 12, border: '2px solid #FFD166', overflow: 'hidden', flexShrink: 0 }}>
+                    {product.image_url && (
+                      <img src={product.image_url} alt={product.name} style={{ width: '100%', height: 120, objectFit: 'cover' }} />
+                    )}
+                    <div style={{ padding: '10px 12px' }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#00B894', marginBottom: 8 }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
+                      {getQty(product.id) === 0 ? (
+                        <button onClick={() => addToCart(product)}
+                          style={{ width: '100%', padding: '6px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                          Adicionar
+                        </button>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          <button onClick={() => removeFromCart(product.id)} style={{ width: 26, height: 26, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 14 }}>-</button>
+                          <span style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E' }}>{getQty(product.id)}</span>
+                          <button onClick={() => addToCart(product)} style={{ width: 26, height: 26, borderRadius: '50%', background: '#00B894', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14 }}>+</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {filteredProducts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '48px 0', color: '#6C757D' }}>
