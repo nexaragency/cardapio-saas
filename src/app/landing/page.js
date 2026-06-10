@@ -139,7 +139,7 @@ export default function Landing() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
             {[
               { label: 'Anota Aí Basic', price: 'R$ 199/mês', color: '#e53935' },
-              { label: 'QRDápio Pro', price: 'R$ 99/mês', color: '#00B894', highlight: true },
+              { label: 'Nexar Pro', price: 'R$ 99/mês', color: '#00B894', highlight: true },
               { label: 'iFood + sistema', price: 'R$ 300+/mês', color: '#e53935' }
             ].map(item => (
               <div key={item.label} style={{
@@ -235,7 +235,7 @@ export default function Landing() {
                 </div>
                 <button onClick={() => router.push('/cadastro')}
                   style={{ width: '100%', padding: '12px', background: plan.highlight ? '#fff' : '#00B894', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: plan.highlight ? '#00B894' : '#fff' }}>
-                  Começar grátis
+                  Assinar Agora
                 </button>
               </div>
             ))}
@@ -254,7 +254,7 @@ export default function Landing() {
 </p>
           <button onClick={() => router.push('/cadastro')}
             style={{ padding: '16px 48px', background: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 16, fontWeight: 700, color: '#00B894', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-            Criar conta grátis agora
+            Criar conta agora
           </button>
         </div>
       </section>
