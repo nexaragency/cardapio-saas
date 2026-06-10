@@ -31,14 +31,14 @@ const [primaryColor, setPrimaryColor] = useState('#00B894')
       if (userData && userData.tenants) {
         setTenantId(userData.tenants.id)
         setForm({
-          name: userData.tenants.name || '',
-          phone: userData.tenants.phone || '',
-          slug: userData.tenants.slug || '',
-          city: userData.tenants.city || '',
-          open_time: userData.tenants.open_time || '18:00',
-          close_time: userData.tenants.close_time || '23:00'
-          setPrimaryColor (userData.tenants.primary_color || '#00B894')
-        })
+  name: userData.tenants.name || '',
+  phone: userData.tenants.phone || '',
+  slug: userData.tenants.slug || '',
+  city: userData.tenants.city || '',
+  open_time: userData.tenants.open_time || '18:00',
+  close_time: userData.tenants.close_time || '23:00'
+})
+setPrimaryColor(userData.tenants.primary_color || '#00B894')
         if (userData.tenants.banner_url) setBannerPreview(userData.tenants.banner_url)
         if (userData.tenants.logo_url) setLogoPreview(userData.tenants.logo_url)
       }
