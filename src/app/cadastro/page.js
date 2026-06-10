@@ -95,7 +95,7 @@ function CadastroForm() {
         <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 24px', lineHeight: 1.6 }}>
           O cadastro no Nexar - Cardápio Digital é feito apenas por convite. Entre em contato com a Nexar Agency para solicitar o seu.
         </p>
-        <a href="https://wa.me/5545999887766" target="_blank"
+        <a href="https://wa.me/5544991171548" target="_blank"
           style={{ display: 'block', padding: '12px', background: '#25D366', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
           Solicitar convite via WhatsApp
         </a>
