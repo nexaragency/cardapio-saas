@@ -241,62 +241,108 @@ export default function AdminPage() {
 
         {/* CLIENTES */}
         {activeMenu === 'clientes' && (
-          <div style={{ maxWidth: 900 }}>
-            <div style={{ marginBottom: 32 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Clientes</h1>
-              <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>{clientes.length + ' restaurante(s) cadastrado(s)'}</p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {clientes.map(cliente => {
-                const sub = cliente.subscriptions?.[0]
-                return (
-                  <div key={cliente.id} style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: '#1A1A2E' }}>{cliente.name}</div>
-                        <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>
-  {cliente.users?.[0]?.email || 'E-mail não informado'} · {cliente.city || 'Cidade não informada'} · Cadastro: {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
-</div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {sub && (
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10, background: STATUS_COLOR[sub.status]?.bg, color: STATUS_COLOR[sub.status]?.color }}>
-                            {sub.status}
-                          </span>
-                        )}
-                        {sub && (
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 10, background: '#F0F4FF', color: '#4A6CF7', textTransform: 'capitalize' }}>
-                            {sub.plan_name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <select onChange={e => updateClientePlan(cliente.id, e.target.value)} defaultValue={sub?.plan_name}
-                        style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E9ECEF', fontSize: 12, color: '#1A1A2E', outline: 'none', cursor: 'pointer' }}>
-                        <option value="starter">Starter</option>
-                        <option value="pro">Pro</option>
-                        <option value="premium">Premium</option>
-                      </select>
-                      <select onChange={e => updateClienteStatus(cliente.id, e.target.value)} defaultValue={sub?.status}
-                        style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E9ECEF', fontSize: 12, color: '#1A1A2E', outline: 'none', cursor: 'pointer' }}>
-                        <option value="trial">Trial</option>
-                        <option value="active">Active</option>
-                        <option value="pending">Pending</option>
-                        <option value="overdue">Overdue</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
-                      <a href={'/cardapio/' + cliente.slug} target="_blank"
-                        style={{ padding: '6px 14px', background: '#E8F8F5', color: '#00B894', borderRadius: 6, textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>
-                        Ver cardápio
-                      </a>
-                    </div>
+  <div style={{ maxWidth: 900 }}>
+    <div style={{ marginBottom: 32 }}>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Clientes</h1>
+      <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>{clientes.length + ' restaurante(s) cadastrado(s)'}</p>
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {clientes.map(cliente => {
+        const sub = cliente.subscriptions?.[0]
+        const email = cliente.users?.[0]?.email || 'Não informado'
+        return (
+          <div key={cliente.id} style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, overflow: 'hidden' }}>
+
+            {/* HEADER DO CLIENTE */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #E9ECEF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                {cliente.logo_url ? (
+                  <img src={cliente.logo_url} alt="logo" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', border: '1px solid #E9ECEF' }} />
+                ) : (
+                  <div style={{ width: 48, height: 48, background: '#F8F9FA', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#adb5bd', border: '1px solid #E9ECEF' }}>
+                    {cliente.name.charAt(0)}
                   </div>
-                )
-              })}
+                )}
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#1A1A2E' }}>{cliente.name}</div>
+                  <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>{email}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {sub && (
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10, background: STATUS_COLOR[sub.status]?.bg, color: STATUS_COLOR[sub.status]?.color }}>
+                    {sub.status}
+                  </span>
+                )}
+                {sub && (
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 10, background: '#F0F4FF', color: '#4A6CF7', textTransform: 'capitalize' }}>
+                    {sub.plan_name}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* BANNER */}
+            {cliente.banner_url && (
+              <div style={{ width: '100%', height: 100, overflow: 'hidden' }}>
+                <img src={cliente.banner_url} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            )}
+
+            {/* INFORMAÇÕES */}
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 4 }}>CIDADE</div>
+                  <div style={{ fontSize: 13, color: '#1A1A2E' }}>{cliente.city || '—'}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 4 }}>WHATSAPP</div>
+                  <div style={{ fontSize: 13, color: '#1A1A2E' }}>{cliente.phone || '—'}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 4 }}>HORÁRIO</div>
+                  <div style={{ fontSize: 13, color: '#1A1A2E' }}>
+                    {cliente.open_time && cliente.close_time
+                      ? cliente.open_time.slice(0, 5) + ' às ' + cliente.close_time.slice(0, 5)
+                      : '—'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ fontSize: 12, color: '#6C757D' }}>
+                  {'Cadastro: ' + new Date(cliente.created_at).toLocaleDateString('pt-BR')}
+                  {sub?.trial_ends_at && sub.status === 'trial' ? ' · Trial até ' + new Date(sub.trial_ends_at).toLocaleDateString('pt-BR') : ''}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <select onChange={e => updateClientePlan(cliente.id, e.target.value)} defaultValue={sub?.plan_name}
+                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E9ECEF', fontSize: 12, color: '#1A1A2E', outline: 'none', cursor: 'pointer' }}>
+                    <option value="starter">Starter</option>
+                    <option value="pro">Pro</option>
+                    <option value="premium">Premium</option>
+                  </select>
+                  <select onChange={e => updateClienteStatus(cliente.id, e.target.value)} defaultValue={sub?.status}
+                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E9ECEF', fontSize: 12, color: '#1A1A2E', outline: 'none', cursor: 'pointer' }}>
+                    <option value="trial">Trial</option>
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  <a href={'https://cardapio.nexarmkt.com.br/cardapio/' + cliente.slug} target="_blank"
+                    style={{ padding: '6px 14px', background: '#E8F8F5', color: '#00B894', borderRadius: 6, textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>
+                    Ver cardápio
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
-        )}
+        )
+      })}
+    </div>
+  </div>
+)}
 
         {/* PEDIDOS */}
         {activeMenu === 'pedidos' && (
