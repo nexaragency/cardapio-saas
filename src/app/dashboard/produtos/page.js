@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { usePlan } from '@/lib/usePlan'
 
 export default function Produtos() {
   const router = useRouter()
+  const { hasAccess } = usePlan()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [tenantId, setTenantId] = useState(null)
@@ -136,6 +138,12 @@ export default function Produtos() {
     await supabase.from('products').update({ active: !product.active }).eq('id', product.id)
     loadProducts(tenantId)
   }
+
+  async function handleFeatured(product) {
+  if (!hasAccess('destaques')) { router.push('/assinar'); return }
+  await supabase.from('products').update({ featured: !product.featured }).eq('id', product.id)
+  loadProducts(tenantId)
+}
 
   async function handleDelete(id) {
     await supabase.from('products').delete().eq('id', id)
@@ -300,15 +308,27 @@ export default function Produtos() {
                 Editar
               </button>
               <button
-                onClick={() => handleToggle(product)}
-                style={{
-                  padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: product.active ? '#E8F8F5' : '#F8F9FA',
-                  color: product.active ? '#00B894' : '#6C757D'
-                }}
-              >
-                {product.active ? 'Ativo' : 'Inativo'}
-              </button>
+  onClick={() => handleFeatured(product)}
+  style={{
+    padding: '6px 14px', borderRadius: 6, border: 'none',
+    cursor: 'pointer', fontSize: 12, fontWeight: 600,
+    background: product.featured ? '#FFF8E8' : '#F8F9FA',
+    color: product.featured ? '#B8860B' : '#adb5bd'
+  }}
+>
+  {product.featured ? '⭐ Destaque' : 'Destaque'}
+</button>
+<button
+  onClick={() => handleToggle(product)}
+  style={{
+    padding: '6px 14px', borderRadius: 6, border: 'none',
+    cursor: 'pointer', fontSize: 12, fontWeight: 600,
+    background: product.active ? '#E8F8F5' : '#F8F9FA',
+    color: product.active ? '#00B894' : '#6C757D'
+  }}
+>
+  {product.active ? 'Ativo' : 'Inativo'}
+</button>
               <button
                 onClick={() => handleDelete(product.id)}
                 style={{ padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: '#FFF5F5', color: '#e53935' }}
