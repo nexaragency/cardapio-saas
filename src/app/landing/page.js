@@ -85,8 +85,10 @@ export default function Landing() {
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #E9ECEF', padding: '0 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 64 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, background: '#00B894', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 18, fontWeight: 700 }}>Q</div>
-            <span style={{ fontWeight: 700, fontSize: 18, color: '#1A1A2E' }}>QRDápio</span>
+            <div style={{ width: 36, height: 36, background: '#1A1A2E', borderRadius: 10, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <img src="/nexar.png" alt="Nexar" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+</div>
+<span style={{ fontWeight: 700, fontSize: 18, color: '#1A1A2E' }}>Nexar - Cardápio Digital</span>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <button onClick={() => router.push('/login')}
@@ -108,8 +110,8 @@ export default function Landing() {
             7 dias grátis — sem cartão de crédito
           </div>
           <h1 style={{ fontSize: 48, fontWeight: 800, color: '#1A1A2E', margin: '0 0 20px', lineHeight: 1.2 }}>
-            O cardápio digital que o seu restaurante precisa
-          </h1>
+  O cardápio digital da Nexar para o seu restaurante
+</h1>
           <p style={{ fontSize: 18, color: '#6C757D', margin: '0 0 40px', lineHeight: 1.6 }}>
             Delivery, salão e relatórios em um só lugar. Configure em minutos, receba pedidos em tempo real e cobre menos que a concorrência.
           </p>
@@ -260,8 +262,10 @@ export default function Landing() {
       {/* FOOTER */}
       <footer style={{ padding: '32px 24px', background: '#1A1A2E', textAlign: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
-          <div style={{ width: 28, height: 28, background: '#00B894', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>Q</div>
-          <span style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>QRDápio</span>
+          <div style={{ width: 28, height: 28, background: '#fff', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <img src="/nexar.png" alt="Nexar" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+</div>
+<span style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>Nexar - Cardápio Digital</span>
         </div>
         <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
           Desenvolvido por Nexar Agency

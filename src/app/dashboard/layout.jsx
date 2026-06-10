@@ -58,13 +58,15 @@ export default function DashboardLayout({ children }) {
         <div style={{ padding: '28px 24px 20px', borderBottom: '1px solid #E9ECEF' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 36, height: 36, background: '#00B894',
-              borderRadius: 10, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', color: '#fff', fontSize: 18, fontWeight: 700
-            }}>Q</div>
+  width: 36, height: 36, background: '#1A1A2E',
+  borderRadius: 10, overflow: 'hidden',
+  display: 'flex', alignItems: 'center', justifyContent: 'center'
+}}>
+  <img src="/nexar.png" alt="Nexar" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+</div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#1A1A2E' }}>QRDápio</div>
-              <div style={{ fontSize: 11, color: '#6C757D' }}>Painel Admin</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#1A1A2E' }}>Nexar</div>
+<div style={{ fontSize: 11, color: '#6C757D' }}>Cardápio Digital</div>
             </div>
           </div>
         </div>

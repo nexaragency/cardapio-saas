@@ -129,8 +129,10 @@ export default function Assinar() {
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
 
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ width: 48, height: 48, background: '#00B894', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff', fontSize: 22, fontWeight: 700 }}>Q</div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E', margin: '0 0 10px' }}>Escolha seu plano</h1>
+          <div style={{ width: 48, height: 48, background: '#1A1A2E', borderRadius: 12, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+  <img src="/nexar.png" alt="Nexar" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+</div>
+<h1 style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E', margin: '0 0 10px' }}>Nexar - Cardápio Digital</h1>
           {daysLeft !== null && daysLeft > 0 && (
             <div style={{ display: 'inline-block', background: '#FFF8E8', border: '1px solid #FFD166', borderRadius: 20, padding: '6px 16px', fontSize: 13, color: '#B8860B', fontWeight: 600 }}>
               {daysLeft === 1 ? 'Último dia de trial!' : daysLeft + ' dias de trial restantes'}
