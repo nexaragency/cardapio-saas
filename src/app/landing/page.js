@@ -107,8 +107,8 @@ export default function Landing() {
       <section style={{ paddingTop: 120, paddingBottom: 80, background: 'linear-gradient(180deg, #F0FDF9 0%, #fff 100%)', textAlign: 'center', padding: '140px 24px 80px' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
           <div style={{ display: 'inline-block', background: '#E8F8F5', border: '1px solid #00B894', borderRadius: 20, padding: '6px 16px', fontSize: 13, color: '#00B894', fontWeight: 600, marginBottom: 24 }}>
-            7 dias grátis — sem cartão de crédito
-          </div>
+  Cardápio digital profissional para o seu negócio
+</div>
           <h1 style={{ fontSize: 48, fontWeight: 800, color: '#1A1A2E', margin: '0 0 20px', lineHeight: 1.2 }}>
   O cardápio digital da Nexar para o seu restaurante
 </h1>
@@ -134,7 +134,7 @@ export default function Landing() {
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 16px' }}>Cansado de pagar caro por um sistema complicado?</h2>
           <p style={{ fontSize: 16, color: '#6C757D', margin: '0 0 48px', lineHeight: 1.7 }}>
-            O Anota Aí cobra R$ 199/mês pelo plano básico. O iFood te engole na comissão. E você ainda precisa de um sistema separado para o salão. O QRDápio resolve tudo isso por menos da metade do preço.
+            O Anota Aí cobra R$ 199/mês pelo plano básico. O iFood te engole na comissão. E você ainda precisa de um sistema separado para o salão. O Nexar - Cardápio Digital resolve tudo isso por menos da metade do preço.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
             {[
@@ -203,7 +203,7 @@ export default function Landing() {
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <h2 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 12px' }}>Planos simples e transparentes</h2>
-            <p style={{ fontSize: 16, color: '#6C757D', margin: 0 }}>7 dias grátis em todos os planos. Sem cartão de crédito.</p>
+            <p style={{ fontSize: 16, color: '#6C757D', margin: 0 }}>Sem fidelidade. Cancele quando quiser.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
             {plans.map(plan => (
@@ -247,11 +247,11 @@ export default function Landing() {
       <section style={{ padding: '80px 24px', background: '#00B894', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <h2 style={{ fontSize: 36, fontWeight: 800, color: '#fff', margin: '0 0 16px' }}>
-            Comece hoje, grátis por 7 dias
-          </h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: '0 0 36px' }}>
-            Sem cartão de crédito. Sem fidelidade. Cancele quando quiser.
-          </p>
+  Comece hoje mesmo
+</h2>
+<p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: '0 0 36px' }}>
+  Sem fidelidade. Cancele quando quiser.
+</p>
           <button onClick={() => router.push('/cadastro')}
             style={{ padding: '16px 48px', background: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 16, fontWeight: 700, color: '#00B894', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
             Criar conta grátis agora
