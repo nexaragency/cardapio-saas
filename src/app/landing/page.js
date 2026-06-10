@@ -11,9 +11,9 @@ const PLANS = [
     features: [
       'Cardápio digital ilimitado',
       'Pedidos via delivery',
-      'Relatórios básicos',
       'QR Code geral',
-      'Suporte por e-mail'
+      'Relatórios básicos',
+      'Suporte via chat'
     ]
   },
   {
@@ -27,7 +27,7 @@ const PLANS = [
       'Gestão do Salão completa',
       'QR Code por mesa',
       'Identificação automática de mesa',
-      'Suporte prioritário'
+      'Histórico de clientes'
     ]
   },
   {
@@ -37,10 +37,10 @@ const PLANS = [
     desc: 'Para operações maiores',
     features: [
       'Tudo do Pro',
-      'Múltiplos usuários',
-      'Relatórios avançados',
-      'Integração com impressora',
-      'Suporte via WhatsApp'
+      'Personalização de cores do cardápio',
+      'Exportar relatórios em PDF',
+      'Seção de destaques no cardápio',
+      'Suporte prioritário via chat'
     ]
   }
 ]
