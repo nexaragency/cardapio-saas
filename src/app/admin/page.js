@@ -47,12 +47,12 @@ export default function AdminPage() {
   }
 
   async function loadClientes() {
-    const { data } = await supabase
-      .from('tenants')
-      .select('*, subscriptions(*)')
-      .order('created_at', { ascending: false })
-    setClientes(data || [])
-  }
+  const { data } = await supabase
+    .from('tenants')
+    .select('*, subscriptions(*), users(email, name)')
+    .order('created_at', { ascending: false })
+  setClientes(data || [])
+}
 
   async function loadPedidos() {
     const { data } = await supabase
@@ -255,8 +255,8 @@ export default function AdminPage() {
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 15, color: '#1A1A2E' }}>{cliente.name}</div>
                         <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>
-                          {cliente.city || 'Cidade não informada'} · {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
-                        </div>
+  {cliente.users?.[0]?.email || 'E-mail não informado'} · {cliente.city || 'Cidade não informada'} · Cadastro: {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
+</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {sub && (
