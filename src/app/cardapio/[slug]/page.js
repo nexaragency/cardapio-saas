@@ -225,6 +225,8 @@ export default function CardapioPublico({ params }) {
     </div>
   )
 
+  const cor = tenant.primary_color || '#00B894'
+
   if (step === 'tracking' && currentOrder) {
     const statusIndex = STATUS_FLOW.indexOf(currentOrder.status)
     const isDelivered = currentOrder.status === 'entregue'
@@ -233,7 +235,7 @@ export default function CardapioPublico({ params }) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F8F9FA', fontFamily: 'Segoe UI, sans-serif', padding: 24 }}>
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 40, textAlign: 'center', maxWidth: 400, width: '100%' }}>
-            <div style={{ width: 64, height: 64, background: '#E8F8F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 28 }}>✓</div>
+            <div style={{ width: 64, height: 64, background: cor + '20', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 28 }}>✓</div>
             <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 10px' }}>Pedido recebido!</h2>
             <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 8px' }}>{'Mesa ' + currentOrder.table_number}</p>
             <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 24px' }}>Seu pedido já foi enviado para a cozinha. Em breve estará na sua mesa!</p>
@@ -246,11 +248,11 @@ export default function CardapioPublico({ params }) {
               ))}
               <div style={{ borderTop: '1px solid #E9ECEF', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}>
                 <span>Total</span>
-                <span style={{ color: '#00B894' }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
+                <span style={{ color: cor }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
               </div>
             </div>
             <button onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
-              style={{ width: '100%', padding: '12px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+              style={{ width: '100%', padding: '12px', background: cor, color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
               Fazer novo pedido
             </button>
           </div>
@@ -260,7 +262,7 @@ export default function CardapioPublico({ params }) {
 
     return (
       <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
-        <div style={{ background: '#00B894', padding: '28px 20px 20px', textAlign: 'center' }}>
+        <div style={{ background: cor, padding: '28px 20px 20px', textAlign: 'center' }}>
           <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>{tenant.name}</h1>
           <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>
             Pedido #{currentOrder.id.slice(-6).toUpperCase()}
@@ -276,11 +278,11 @@ export default function CardapioPublico({ params }) {
           </div>
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
             <div style={{ height: 4, background: '#E9ECEF', borderRadius: 2, marginBottom: 12 }}>
-              <div style={{ height: 4, background: '#00B894', borderRadius: 2, width: (statusIndex / (STATUS_FLOW.length - 1) * 100) + '%', transition: 'width 0.5s ease' }} />
+              <div style={{ height: 4, background: cor, borderRadius: 2, width: (statusIndex / (STATUS_FLOW.length - 1) * 100) + '%', transition: 'width 0.5s ease' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               {STATUS_FLOW.map((s, i) => (
-                <div key={s} style={{ width: 24, height: 24, borderRadius: '50%', background: i <= statusIndex ? '#00B894' : '#E9ECEF', color: i <= statusIndex ? '#fff' : '#adb5bd', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div key={s} style={{ width: 24, height: 24, borderRadius: '50%', background: i <= statusIndex ? cor : '#E9ECEF', color: i <= statusIndex ? '#fff' : '#adb5bd', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {i < statusIndex ? '✓' : i + 1}
                 </div>
               ))}
@@ -296,12 +298,12 @@ export default function CardapioPublico({ params }) {
             ))}
             <div style={{ borderTop: '1px solid #E9ECEF', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}>
               <span>Total</span>
-              <span style={{ color: '#00B894' }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
+              <span style={{ color: cor }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
             </div>
           </div>
           {isDelivered ? (
             <button onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
-              style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+              style={{ width: '100%', padding: '14px', background: cor, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
               Fazer novo pedido
             </button>
           ) : (
@@ -315,7 +317,7 @@ export default function CardapioPublico({ params }) {
   return (
     <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
 
-      <div style={{ width: '100%', height: 200, overflow: 'hidden', background: 'linear-gradient(135deg, #00B894, #00856F)' }}>
+      <div style={{ width: '100%', height: 200, overflow: 'hidden', background: 'linear-gradient(135deg, ' + cor + ', ' + cor + 'AA)' }}>
         {tenant.banner_url && (
           <img src={tenant.banner_url} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
         )}
@@ -324,7 +326,7 @@ export default function CardapioPublico({ params }) {
       <div style={{ background: '#fff', borderBottom: '1px solid #E9ECEF', padding: '0 20px' }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, paddingBottom: 16 }}>
-            <div style={{ width: 88, height: 88, borderRadius: 14, flexShrink: 0, border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', overflow: 'hidden', background: '#00B894', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: -44, position: 'relative', zIndex: 10 }}>
+            <div style={{ width: 88, height: 88, borderRadius: 14, flexShrink: 0, border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', overflow: 'hidden', background: cor, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: -44, position: 'relative', zIndex: 10 }}>
               {tenant.logo_url ? (
                 <img src={tenant.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
@@ -334,7 +336,7 @@ export default function CardapioPublico({ params }) {
             <div style={{ flex: 1, paddingBottom: 4 }}>
               <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{tenant.name}</h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? '#00B894' : '#e53935' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? cor : '#e53935' }}>
                   {isOpen ? '● Aberto' : '● Fechado'}
                 </span>
                 {tenant.open_time && tenant.close_time && (
@@ -349,12 +351,12 @@ export default function CardapioPublico({ params }) {
 
           <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
             <button onClick={() => setActiveCategory(null)}
-              style={{ padding: '12px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', color: activeCategory === null ? '#00B894' : '#6C757D', borderBottom: activeCategory === null ? '2px solid #00B894' : '2px solid transparent' }}>
+              style={{ padding: '12px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', color: activeCategory === null ? cor : '#6C757D', borderBottom: activeCategory === null ? '2px solid ' + cor : '2px solid transparent' }}>
               Todos
             </button>
             {categories.map(cat => (
               <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                style={{ padding: '12px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', color: activeCategory === cat.id ? '#00B894' : '#6C757D', borderBottom: activeCategory === cat.id ? '2px solid #00B894' : '2px solid transparent' }}>
+                style={{ padding: '12px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', color: activeCategory === cat.id ? cor : '#6C757D', borderBottom: activeCategory === cat.id ? '2px solid ' + cor : '2px solid transparent' }}>
                 {cat.name}
               </button>
             ))}
@@ -373,9 +375,7 @@ export default function CardapioPublico({ params }) {
 
           {products.filter(p => p.featured).length > 0 && !searchTerm && (
             <div style={{ marginBottom: 28 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', marginBottom: 14 }}>
-                ⭐ Destaques
-              </h2>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', marginBottom: 14 }}>⭐ Destaques</h2>
               <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
                 {products.filter(p => p.featured).map(product => (
                   <div key={product.id} style={{ minWidth: 200, background: '#fff', borderRadius: 12, border: '2px solid #FFD166', overflow: 'hidden', flexShrink: 0 }}>
@@ -384,17 +384,17 @@ export default function CardapioPublico({ params }) {
                     )}
                     <div style={{ padding: '10px 12px' }}>
                       <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#00B894', marginBottom: 8 }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: cor, marginBottom: 8 }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
                       {getQty(product.id) === 0 ? (
                         <button onClick={() => addToCart(product)}
-                          style={{ width: '100%', padding: '6px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                          style={{ width: '100%', padding: '6px', background: cor, color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                           Adicionar
                         </button>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                           <button onClick={() => removeFromCart(product.id)} style={{ width: 26, height: 26, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 14 }}>-</button>
                           <span style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E' }}>{getQty(product.id)}</span>
-                          <button onClick={() => addToCart(product)} style={{ width: 26, height: 26, borderRadius: '50%', background: '#00B894', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14 }}>+</button>
+                          <button onClick={() => addToCart(product)} style={{ width: 26, height: 26, borderRadius: '50%', background: cor, border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14 }}>+</button>
                         </div>
                       )}
                     </div>
@@ -425,17 +425,17 @@ export default function CardapioPublico({ params }) {
                       <div style={{ fontSize: 12, color: '#6C757D', marginBottom: 8, lineHeight: 1.4, flex: 1 }}>{product.description}</div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#00B894' }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: cor }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
                       {qty === 0 ? (
                         <button onClick={() => addToCart(product)}
-                          style={{ padding: '6px 16px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                          style={{ padding: '6px 16px', background: cor, color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                           Adicionar
                         </button>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <button onClick={() => removeFromCart(product.id)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
                           <span style={{ fontWeight: 700, fontSize: 14, color: '#1A1A2E' }}>{qty}</span>
-                          <button onClick={() => addToCart(product)} style={{ width: 28, height: 28, borderRadius: '50%', background: '#00B894', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                          <button onClick={() => addToCart(product)} style={{ width: 28, height: 28, borderRadius: '50%', background: cor, border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                         </div>
                       )}
                     </div>
@@ -450,7 +450,7 @@ export default function CardapioPublico({ params }) {
       {cart.length > 0 && step === 'menu' && (
         <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
           <button onClick={() => setStep('checkout')}
-            style={{ background: '#00B894', color: '#fff', border: 'none', borderRadius: 30, padding: '14px 32px', cursor: 'pointer', fontSize: 14, fontWeight: 700, boxShadow: '0 4px 20px rgba(0,184,148,0.4)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            style={{ background: cor, color: '#fff', border: 'none', borderRadius: 30, padding: '14px 32px', cursor: 'pointer', fontSize: 14, fontWeight: 700, boxShadow: '0 4px 20px ' + cor + '66', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>{getTotalItems()}</span>
             Ver pedido — R$ {getSubtotal().toFixed(2)}
           </button>
@@ -464,10 +464,10 @@ export default function CardapioPublico({ params }) {
           </button>
 
           {tableNumber && (
-            <div style={{ background: '#E8F8F5', border: '1px solid #00B894', borderRadius: 12, padding: '12px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ background: cor + '15', border: '1px solid ' + cor, borderRadius: 12, padding: '12px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 20 }}>🪑</span>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#00B894' }}>Mesa {tableNumber}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: cor }}>Mesa {tableNumber}</div>
                 <div style={{ fontSize: 12, color: '#6C757D' }}>Pedido para consumo no salão</div>
               </div>
             </div>
@@ -495,7 +495,7 @@ export default function CardapioPublico({ params }) {
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', borderTop: '1px solid #E9ECEF', marginTop: 4 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: '#1A1A2E' }}>Total</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#00B894' }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: cor }}>
                 R$ {tableNumber ? getSubtotal().toFixed(2) : getTotal().toFixed(2)}
               </span>
             </div>
@@ -503,7 +503,7 @@ export default function CardapioPublico({ params }) {
 
           {tableNumber ? (
             <button onClick={handleSubmitOrder} disabled={submitting}
-              style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+              style={{ width: '100%', padding: '14px', background: cor, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
               {submitting ? 'Enviando pedido...' : 'Confirmar pedido — R$ ' + getSubtotal().toFixed(2)}
             </button>
           ) : (
@@ -525,7 +525,7 @@ export default function CardapioPublico({ params }) {
                   style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: neighborhoodError ? '1px solid #e53935' : '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 4 }} />
                 {neighborhoodError && <p style={{ color: '#e53935', fontSize: 12, margin: '0 0 10px' }}>{neighborhoodError}</p>}
                 {deliveryFee !== null && !neighborhoodError && (
-                  <p style={{ color: '#00B894', fontSize: 12, margin: '0 0 10px', fontWeight: 600 }}>
+                  <p style={{ color: cor, fontSize: 12, margin: '0 0 10px', fontWeight: 600 }}>
                     {deliveryFee === 0 ? 'Entrega grátis neste bairro!' : 'Taxa de entrega: R$ ' + deliveryFee.toFixed(2)}
                   </p>
                 )}
@@ -539,7 +539,7 @@ export default function CardapioPublico({ params }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                   {['dinheiro', 'pix', 'debito', 'credito'].map(method => (
                     <button key={method} onClick={() => setForm({ ...form, payment_method: method })}
-                      style={{ padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: form.payment_method === method ? '2px solid #00B894' : '1px solid #E9ECEF', background: form.payment_method === method ? '#E8F8F5' : '#fff', color: form.payment_method === method ? '#00B894' : '#6C757D' }}>
+                      style={{ padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: form.payment_method === method ? '2px solid ' + cor : '1px solid #E9ECEF', background: form.payment_method === method ? cor + '15' : '#fff', color: form.payment_method === method ? cor : '#6C757D' }}>
                       {method === 'dinheiro' ? 'Dinheiro' : method === 'pix' ? 'Pix' : method === 'debito' ? 'Débito' : 'Crédito'}
                     </button>
                   ))}
@@ -552,7 +552,7 @@ export default function CardapioPublico({ params }) {
               </div>
 
               <button onClick={handleSubmitOrder} disabled={submitting}
-                style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+                style={{ width: '100%', padding: '14px', background: cor, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
                 {submitting ? 'Enviando pedido...' : 'Confirmar pedido — R$ ' + getTotal().toFixed(2)}
               </button>
             </>
