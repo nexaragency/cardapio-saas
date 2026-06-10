@@ -74,15 +74,7 @@ export default function AdminPage() {
     setTimeout(() => setCopied(null), 2000)
   }
 
-  async function updateClientePlan(tenantId, planName) {
-    await supabase.from('subscriptions').update({ plan_name: planName }).eq('tenant_id', tenantId)
-    loadClientes()
-  }
-
-  async function updateClienteStatus(tenantId, status) {
-    await supabase.from('subscriptions').update({ status }).eq('tenant_id', tenantId)
-    loadClientes()
-  }
+  
 
   if (!authenticated) {
     return (
@@ -265,20 +257,7 @@ export default function AdminPage() {
                           {sub?.trial_ends_at && sub.status === 'trial' ? ' · Trial até ' + new Date(sub.trial_ends_at).toLocaleDateString('pt-BR') : ''}
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <select onChange={e => updateClientePlan(cliente.id, e.target.value)} defaultValue={sub?.plan_name}
-                            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E9ECEF', fontSize: 12, color: '#1A1A2E', outline: 'none', cursor: 'pointer' }}>
-                            <option value="starter">Starter</option>
-                            <option value="pro">Pro</option>
-                            <option value="premium">Premium</option>
-                          </select>
-                          <select onChange={e => updateClienteStatus(cliente.id, e.target.value)} defaultValue={sub?.status}
-                            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E9ECEF', fontSize: 12, color: '#1A1A2E', outline: 'none', cursor: 'pointer' }}>
-                            <option value="trial">Trial</option>
-                            <option value="active">Active</option>
-                            <option value="pending">Pending</option>
-                            <option value="overdue">Overdue</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
+                          
                           <a href={'https://cardapio.nexarmkt.com.br/cardapio/' + cliente.slug} target="_blank"
                             style={{ padding: '6px 14px', background: '#E8F8F5', color: '#00B894', borderRadius: 6, textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>
                             Ver cardápio
