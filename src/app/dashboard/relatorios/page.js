@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { usePlan } from '@/lib/usePlan'
 
 const PAYMENT_LABEL = {
   dinheiro: 'Dinheiro',
@@ -12,6 +13,7 @@ const PAYMENT_LABEL = {
 }
 
 export default function Relatorios() {
+  const { hasAccess } = usePlan()
   const router = useRouter()
   const [tenantId, setTenantId] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -93,11 +95,19 @@ export default function Relatorios() {
   return (
     <div style={{ maxWidth: 800 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Relatórios</h1>
-          <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Apenas pedidos com status Entregue</p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+  <div>
+    <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Relatórios</h1>
+    <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Apenas pedidos com status Entregue</p>
+  </div>
+  <div style={{ display: 'flex', gap: 8 }}>
+    {hasAccess('pdf') && (
+      <button
+        onClick={() => window.print()}
+        style={{ padding: '7px 16px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600, background: '#F0F4FF', color: '#4A6CF7', border: '1px solid #E9ECEF' }}
+      >
+        Exportar PDF
+      </button>
+    )}
           {['hoje', 'semana', 'mes'].map(p => (
             <button
               key={p}
