@@ -9,6 +9,7 @@ export default function Categorias() {
   const [categories, setCategories] = useState([])
   const [tenantId, setTenantId] = useState(null)
   const [name, setName] = useState('')
+  const [isAddon, setIsAddon] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -39,9 +40,9 @@ export default function Categorias() {
     setSaving(true)
     setError('')
     const { error } = await supabase
-      .from('categories').insert({ tenant_id: tenantId, name, position: categories.length })
+      .from('categories').insert({ tenant_id: tenantId, name, position: categories.length, is_addon: isAddon })
     if (error) { setError('Erro ao salvar: ' + error.message) }
-    else { setName(''); loadCategories(tenantId) }
+    else { setName(''); setIsAddon(false); loadCategories(tenantId) }
     setSaving(false)
   }
 
@@ -69,10 +70,10 @@ export default function Categorias() {
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 24 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 12 }}>NOVA CATEGORIA</div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
           <input
             type="text"
-            placeholder="Ex: Pizzas, Bebidas, Sobremesas"
+            placeholder="Ex: Pizzas, Bebidas, Bordas Recheadas"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
@@ -86,6 +87,13 @@ export default function Categorias() {
             {saving ? 'Salvando...' : 'Adicionar'}
           </button>
         </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <input type="checkbox" checked={isAddon} onChange={e => setIsAddon(e.target.checked)}
+            style={{ width: 16, height: 16, cursor: 'pointer' }} />
+          <span style={{ fontSize: 13, color: '#1A1A2E' }}>
+            Esta é uma categoria de <strong>adicionais/bordas</strong> — aparece no modal de seleção do produto
+          </span>
+        </label>
         {error && <p style={{ color: '#e53935', fontSize: 13, marginTop: 8 }}>{error}</p>}
       </div>
 
@@ -109,13 +117,20 @@ export default function Categorias() {
                 width: 8, height: 8, borderRadius: '50%',
                 background: cat.active ? '#00B894' : '#dee2e6'
               }} />
-              <span style={{
-                fontSize: 14, fontWeight: 500,
-                color: cat.active ? '#1A1A2E' : '#adb5bd',
-                textDecoration: cat.active ? 'none' : 'line-through'
-              }}>
-                {cat.name}
-              </span>
+              <div>
+                <span style={{
+                  fontSize: 14, fontWeight: 500,
+                  color: cat.active ? '#1A1A2E' : '#adb5bd',
+                  textDecoration: cat.active ? 'none' : 'line-through'
+                }}>
+                  {cat.name}
+                </span>
+                {cat.is_addon && (
+                  <span style={{ marginLeft: 8, fontSize: 11, background: '#FFF8E8', color: '#B8860B', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>
+                    Adicional
+                  </span>
+                )}
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
