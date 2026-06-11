@@ -23,6 +23,7 @@ export default function CardapioPublico({ params }) {
   const { slug } = use(params)
   const [tenant, setTenant] = useState(null)
   const [categories, setCategories] = useState([])
+  const [addonCategories, setAddonCategories] = useState([])
   const [products, setProducts] = useState([])
   const [zones, setZones] = useState([])
   const [cart, setCart] = useState([])
@@ -34,6 +35,11 @@ export default function CardapioPublico({ params }) {
   const [tableNumber, setTableNumber] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [isOpen, setIsOpen] = useState(true)
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [selectedVariation, setSelectedVariation] = useState(null)
+  const [selectedAddons, setSelectedAddons] = useState([])
+  const [observation, setObservation] = useState('')
+  const [addonProducts, setAddonProducts] = useState([])
   const [form, setForm] = useState({
     name: '', phone: '', address: '', neighborhood: '', city: '',
     payment_method: 'dinheiro', change_for: ''
@@ -59,13 +65,26 @@ export default function CardapioPublico({ params }) {
       const { data: cats } = await supabase
         .from('categories').select('*')
         .eq('tenant_id', tenantData.id).eq('active', true).order('position')
-      setCategories(cats || [])
-      if (cats && cats.length > 0) setActiveCategory(cats[0].id)
+
+      const normalCats = (cats || []).filter(c => !c.is_addon)
+      const addonCats = (cats || []).filter(c => c.is_addon)
+      setCategories(normalCats)
+      setAddonCategories(addonCats)
+      if (normalCats.length > 0) setActiveCategory(normalCats[0].id)
 
       const { data: prods } = await supabase
-        .from('products').select('*, categories(name)')
+        .from('products').select('*, categories(name), product_variations(*)')
         .eq('tenant_id', tenantData.id).eq('active', true).order('position')
       setProducts(prods || [])
+
+      if (addonCats.length > 0) {
+        const addonCatIds = addonCats.map(c => c.id)
+        const { data: addonProds } = await supabase
+          .from('products').select('*, categories(name)')
+          .eq('tenant_id', tenantData.id).eq('active', true)
+          .in('category_id', addonCatIds)
+        setAddonProducts(addonProds || [])
+      }
 
       const { data: zns } = await supabase
         .from('delivery_zones').select('*')
@@ -133,24 +152,75 @@ export default function CardapioPublico({ params }) {
     else { setDeliveryFee(null); setNeighborhoodError('Bairro fora da área de entrega') }
   }
 
-  function addToCart(product) {
-    setCart(prev => {
-      const existing = prev.find(i => i.id === product.id)
-      if (existing) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
-      return [...prev, { ...product, qty: 1 }]
+  function openProductModal(product) {
+    setSelectedProduct(product)
+    setSelectedVariation(product.product_variations?.length === 1 ? product.product_variations[0] : null)
+    setSelectedAddons([])
+    setObservation('')
+  }
+
+  function closeModal() {
+    setSelectedProduct(null)
+    setSelectedVariation(null)
+    setSelectedAddons([])
+    setObservation('')
+  }
+
+  function toggleAddon(addon) {
+    setSelectedAddons(prev => {
+      const exists = prev.find(a => a.id === addon.id)
+      if (exists) return prev.filter(a => a.id !== addon.id)
+      return [...prev, addon]
     })
+  }
+
+  function getModalTotal() {
+    if (!selectedProduct) return 0
+    const basePrice = selectedVariation ? Number(selectedVariation.price) : Number(selectedProduct.price)
+    const addonsTotal = selectedAddons.reduce((sum, a) => sum + Number(a.price), 0)
+    return basePrice + addonsTotal
+  }
+
+  function addToCartFromModal() {
+    if (!selectedProduct) return
+    if (selectedProduct.product_variations?.length > 0 && !selectedVariation) {
+      alert('Selecione um tamanho para continuar')
+      return
+    }
+
+    const cartItem = {
+      id: selectedProduct.id + (selectedVariation?.id || '') + Date.now(),
+      productId: selectedProduct.id,
+      name: selectedProduct.name + (selectedVariation ? ' (' + selectedVariation.name + ')' : ''),
+      price: selectedVariation ? Number(selectedVariation.price) : Number(selectedProduct.price),
+      addons: selectedAddons,
+      observation: observation,
+      qty: 1,
+      image_url: selectedProduct.image_url
+    }
+
+    setCart(prev => [...prev, cartItem])
+    closeModal()
   }
 
   function removeFromCart(id) {
     setCart(prev => {
-      const existing = prev.find(i => i.id === id)
-      if (existing.qty === 1) return prev.filter(i => i.id !== id)
+      const item = prev.find(i => i.id === id)
+      if (!item) return prev
+      if (item.qty === 1) return prev.filter(i => i.id !== id)
       return prev.map(i => i.id === id ? { ...i, qty: i.qty - 1 } : i)
     })
   }
 
-  function getQty(id) { return cart.find(i => i.id === id)?.qty || 0 }
-  function getSubtotal() { return cart.reduce((sum, i) => sum + (i.price * i.qty), 0) }
+  function addQty(id) {
+    setCart(prev => prev.map(i => i.id === id ? { ...i, qty: i.qty + 1 } : i))
+  }
+
+  function getItemTotal(item) {
+    return (item.price + item.addons.reduce((sum, a) => sum + Number(a.price), 0)) * item.qty
+  }
+
+  function getSubtotal() { return cart.reduce((sum, i) => sum + getItemTotal(i), 0) }
   function getTotal() { return getSubtotal() + (deliveryFee || 0) }
   function getTotalItems() { return cart.reduce((sum, i) => sum + i.qty, 0) }
 
@@ -185,12 +255,28 @@ export default function CardapioPublico({ params }) {
 
     if (orderError) { alert('Erro ao fazer pedido. Tente novamente.'); setSubmitting(false); return }
 
-    await supabase.from('order_items').insert(
-      cart.map(i => ({
-        order_id: order.id, product_id: i.id, product_name: i.name,
-        quantity: i.qty, unit_price: i.price, subtotal: i.price * i.qty
-      }))
-    )
+    for (const item of cart) {
+      const addonTotal = item.addons.reduce((sum, a) => sum + Number(a.price), 0)
+      const { data: orderItem } = await supabase.from('order_items').insert({
+        order_id: order.id,
+        product_id: item.productId,
+        product_name: item.name,
+        quantity: item.qty,
+        unit_price: item.price + addonTotal,
+        subtotal: (item.price + addonTotal) * item.qty,
+        observation: item.observation || null
+      }).select().single()
+
+      if (orderItem && item.addons.length > 0) {
+        await supabase.from('order_item_addons').insert(
+          item.addons.map(a => ({
+            order_item_id: orderItem.id,
+            addon_name: a.name,
+            addon_price: Number(a.price)
+          }))
+        )
+      }
+    }
 
     if (!tableNumber) {
       await supabase.from('customers').upsert({
@@ -210,7 +296,8 @@ export default function CardapioPublico({ params }) {
   const filteredProducts = products.filter(p => {
     const matchCategory = activeCategory ? p.category_id === activeCategory : true
     const matchSearch = searchTerm ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) : true
-    return matchCategory && matchSearch
+    const isAddon = addonCategories.some(c => c.id === p.category_id)
+    return matchCategory && matchSearch && !isAddon
   })
 
   if (loading) return (
@@ -264,9 +351,7 @@ export default function CardapioPublico({ params }) {
       <div style={{ background: '#F8F9FA', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
         <div style={{ background: cor, padding: '28px 20px 20px', textAlign: 'center' }}>
           <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>{tenant.name}</h1>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>
-            Pedido #{currentOrder.id.slice(-6).toUpperCase()}
-          </p>
+          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: 0 }}>Pedido #{currentOrder.id.slice(-6).toUpperCase()}</p>
         </div>
         <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 16px' }}>
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 28, marginBottom: 16, textAlign: 'center' }}>
@@ -373,33 +458,29 @@ export default function CardapioPublico({ params }) {
             <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', fontSize: 18 }}>🔍</span>
           </div>
 
-          {products.filter(p => p.featured).length > 0 && !searchTerm && (
+          {products.filter(p => p.featured && !addonCategories.some(c => c.id === p.category_id)).length > 0 && !searchTerm && (
             <div style={{ marginBottom: 28 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', marginBottom: 14 }}>⭐ Destaques</h2>
               <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
-                {products.filter(p => p.featured).map(product => (
-                  <div key={product.id} style={{ minWidth: 200, background: '#fff', borderRadius: 12, border: '2px solid #FFD166', overflow: 'hidden', flexShrink: 0 }}>
-                    {product.image_url && (
-                      <img src={product.image_url} alt={product.name} style={{ width: '100%', height: 120, objectFit: 'cover' }} />
-                    )}
-                    <div style={{ padding: '10px 12px' }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: cor, marginBottom: 8 }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
-                      {getQty(product.id) === 0 ? (
-                        <button onClick={() => addToCart(product)}
-                          style={{ width: '100%', padding: '6px', background: cor, color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                          Adicionar
-                        </button>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                          <button onClick={() => removeFromCart(product.id)} style={{ width: 26, height: 26, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 14 }}>-</button>
-                          <span style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E' }}>{getQty(product.id)}</span>
-                          <button onClick={() => addToCart(product)} style={{ width: 26, height: 26, borderRadius: '50%', background: cor, border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14 }}>+</button>
-                        </div>
+                {products.filter(p => p.featured && !addonCategories.some(c => c.id === p.category_id)).map(product => {
+                  const minPrice = product.product_variations?.length > 0
+                    ? Math.min(...product.product_variations.map(v => Number(v.price)))
+                    : null
+                  return (
+                    <div key={product.id} onClick={() => openProductModal(product)}
+                      style={{ minWidth: 200, background: '#fff', borderRadius: 12, border: '2px solid #FFD166', overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}>
+                      {product.image_url && (
+                        <img src={product.image_url} alt={product.name} style={{ width: '100%', height: 120, objectFit: 'cover' }} />
                       )}
+                      <div style={{ padding: '10px 12px' }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: cor }}>
+                          {minPrice !== null ? 'A partir de R$ ' + minPrice.toFixed(2) : 'R$ ' + Number(product.price).toFixed(2)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -413,9 +494,12 @@ export default function CardapioPublico({ params }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {filteredProducts.map(product => {
-              const qty = getQty(product.id)
+              const minPrice = product.product_variations?.length > 0
+                ? Math.min(...product.product_variations.map(v => Number(v.price)))
+                : null
               return (
-                <div key={product.id} style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9ECEF', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div key={product.id} onClick={() => openProductModal(product)}
+                  style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9ECEF', overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
                   {product.image_url && (
                     <img src={product.image_url} alt={product.name} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
                   )}
@@ -425,19 +509,13 @@ export default function CardapioPublico({ params }) {
                       <div style={{ fontSize: 12, color: '#6C757D', marginBottom: 8, lineHeight: 1.4, flex: 1 }}>{product.description}</div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: cor }}>{'R$ ' + Number(product.price).toFixed(2)}</div>
-                      {qty === 0 ? (
-                        <button onClick={() => addToCart(product)}
-                          style={{ padding: '6px 16px', background: cor, color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                          Adicionar
-                        </button>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <button onClick={() => removeFromCart(product.id)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
-                          <span style={{ fontWeight: 700, fontSize: 14, color: '#1A1A2E' }}>{qty}</span>
-                          <button onClick={() => addToCart(product)} style={{ width: 28, height: 28, borderRadius: '50%', background: cor, border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-                        </div>
-                      )}
+                      <div style={{ fontSize: 15, fontWeight: 700, color: cor }}>
+                        {minPrice !== null ? 'A partir de R$ ' + minPrice.toFixed(2) : 'R$ ' + Number(product.price).toFixed(2)}
+                      </div>
+                      <button onClick={e => { e.stopPropagation(); openProductModal(product) }}
+                        style={{ padding: '6px 16px', background: cor, color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                        Adicionar
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -447,7 +525,100 @@ export default function CardapioPublico({ params }) {
         </div>
       )}
 
-      {cart.length > 0 && step === 'menu' && (
+      {/* MODAL DO PRODUTO */}
+      {selectedProduct && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}
+          onClick={e => { if (e.target === e.currentTarget) closeModal() }}>
+          <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+            {selectedProduct.image_url && (
+              <img src={selectedProduct.image_url} alt={selectedProduct.name} style={{ width: '100%', height: 200, objectFit: 'cover' }} />
+            )}
+            <div style={{ padding: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>{selectedProduct.name}</h2>
+                <button onClick={closeModal} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#6C757D', lineHeight: 1 }}>×</button>
+              </div>
+              {selectedProduct.description && (
+                <p style={{ fontSize: 14, color: '#6C757D', margin: '0 0 20px', lineHeight: 1.6 }}>{selectedProduct.description}</p>
+              )}
+
+              {selectedProduct.product_variations?.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', marginBottom: 10 }}>
+                    Escolha o tamanho <span style={{ color: '#e53935', fontSize: 11 }}>*obrigatório</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {selectedProduct.product_variations.sort((a, b) => a.position - b.position).map(v => (
+                      <div key={v.id} onClick={() => setSelectedVariation(v)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 10, border: selectedVariation?.id === v.id ? '2px solid ' + cor : '1px solid #E9ECEF', cursor: 'pointer', background: selectedVariation?.id === v.id ? cor + '10' : '#fff' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid ' + (selectedVariation?.id === v.id ? cor : '#E9ECEF'), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {selectedVariation?.id === v.id && <div style={{ width: 10, height: 10, borderRadius: '50%', background: cor }} />}
+                          </div>
+                          <span style={{ fontSize: 14, fontWeight: 500, color: '#1A1A2E' }}>{v.name}</span>
+                        </div>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: cor }}>R$ {Number(v.price).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {addonProducts.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', marginBottom: 10 }}>
+                    Adicionais <span style={{ fontSize: 11, color: '#6C757D', fontWeight: 400 }}>(opcional)</span>
+                  </div>
+                  {addonCategories.map(cat => {
+                    const catAddons = addonProducts.filter(p => p.category_id === cat.id)
+                    if (catAddons.length === 0) return null
+                    return (
+                      <div key={cat.id} style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>{cat.name.toUpperCase()}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {catAddons.map(addon => {
+                            const selected = selectedAddons.some(a => a.id === addon.id)
+                            return (
+                              <div key={addon.id} onClick={() => toggleAddon(addon)}
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: 10, border: selected ? '2px solid ' + cor : '1px solid #E9ECEF', cursor: 'pointer', background: selected ? cor + '10' : '#fff' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <div style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (selected ? cor : '#E9ECEF'), background: selected ? cor : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {selected && <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>✓</span>}
+                                  </div>
+                                  <span style={{ fontSize: 14, color: '#1A1A2E' }}>{addon.name}</span>
+                                </div>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: Number(addon.price) > 0 ? cor : '#adb5bd' }}>
+                                  {Number(addon.price) > 0 ? '+ R$ ' + Number(addon.price).toFixed(2) : 'Grátis'}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', marginBottom: 8 }}>
+                  Observação <span style={{ fontSize: 11, color: '#6C757D', fontWeight: 400 }}>(opcional)</span>
+                </div>
+                <textarea placeholder="Ex: sem cebola, bem passado, ponto da carne..."
+                  value={observation} onChange={e => setObservation(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', resize: 'none', height: 80, boxSizing: 'border-box' }} />
+              </div>
+
+              <button onClick={addToCartFromModal}
+                style={{ width: '100%', padding: '14px', background: cor, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+                Adicionar — R$ {getModalTotal().toFixed(2)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cart.length > 0 && step === 'menu' && !selectedProduct && (
         <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
           <button onClick={() => setStep('checkout')}
             style={{ background: cor, color: '#fff', border: 'none', borderRadius: 30, padding: '14px 32px', cursor: 'pointer', fontSize: 14, fontWeight: 700, boxShadow: '0 4px 20px ' + cor + '66', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -476,9 +647,27 @@ export default function CardapioPublico({ params }) {
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>RESUMO DO PEDIDO</div>
             {cart.map(item => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F8F9FA' }}>
-                <span style={{ fontSize: 14, color: '#1A1A2E' }}>{item.qty}x {item.name}</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>R$ {(item.price * item.qty).toFixed(2)}</span>
+              <div key={item.id} style={{ padding: '10px 0', borderBottom: '1px solid #F8F9FA' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 14, color: '#1A1A2E', fontWeight: 500 }}>{item.qty}x {item.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>R$ {getItemTotal(item).toFixed(2)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button onClick={() => removeFromCart(item.id)} style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid #E9ECEF', background: '#fff', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
+                      <button onClick={() => addQty(item.id)} style={{ width: 24, height: 24, borderRadius: '50%', background: cor, border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                    </div>
+                  </div>
+                </div>
+                {item.addons.length > 0 && (
+                  <div style={{ fontSize: 12, color: '#6C757D', marginTop: 4 }}>
+                    {item.addons.map(a => a.name).join(', ')}
+                  </div>
+                )}
+                {item.observation && (
+                  <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2, fontStyle: 'italic' }}>
+                    Obs: {item.observation}
+                  </div>
+                )}
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
