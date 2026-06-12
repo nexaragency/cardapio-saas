@@ -126,9 +126,7 @@ export default function Categorias() {
                   {cat.name}
                 </span>
                 {cat.is_addon === true && (
-  <span style={{ marginLeft: 8, fontSize: 11, background: '#FFF8E8', color: '#B8860B', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>
-    Adicional
-  </span>
+  <span style={{ marginLeft: 8, fontSize: 11, background: '#FFF8E8', color: '#B8860B', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>Adicional</span>
 )}
               </div>
             </div>
