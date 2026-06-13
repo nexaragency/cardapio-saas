@@ -123,9 +123,8 @@ export default function Categorias() {
   color: cat.active ? '#1A1A2E' : '#adb5bd',
   textDecoration: cat.active ? 'none' : 'line-through'
 }}>
-  {cat.name} {cat.is_addon ? '(Adicional)' : ''}
+ {cat.name} {cat.is_addon ? '(Adicional)' : ''}
 </span>
-)}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
