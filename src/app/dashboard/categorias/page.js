@@ -119,14 +119,12 @@ export default function Categorias() {
               }} />
               <div>
                 <span style={{
-                  fontSize: 14, fontWeight: 500,
-                  color: cat.active ? '#1A1A2E' : '#adb5bd',
-                  textDecoration: cat.active ? 'none' : 'line-through'
-                }}>
-                  {cat.name}
-                </span>
-                {cat.is_addon === true && (
-  <span style={{ marginLeft: 8, fontSize: 11, background: '#FFF8E8', color: '#B8860B', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>Adicional</span>
+  fontSize: 14, fontWeight: 500,
+  color: cat.active ? '#1A1A2E' : '#adb5bd',
+  textDecoration: cat.active ? 'none' : 'line-through'
+}}>
+  {cat.name} {cat.is_addon ? '(Adicional)' : ''}
+</span>
 )}
               </div>
             </div>
