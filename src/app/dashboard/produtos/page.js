@@ -46,13 +46,12 @@ export default function Produtos() {
   }
 
   async function loadCategories(tid) {
-    const { data } = await supabase
-      .from('categories').select('*')
-      .eq('tenant_id', tid)
-      .eq('active', true)
-      .eq('is_addon', false)
-    setCategories(data || [])
-  }
+  const { data } = await supabase
+    .from('categories').select('*')
+    .eq('tenant_id', tid)
+    .eq('active', true)
+  setCategories(data || [])
+}
 
   function handleImageChange(e) {
     const file = e.target.files[0]
