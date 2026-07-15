@@ -2,62 +2,7 @@
 
 import { useState } from 'react'
 
-const PLANS = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 59,
-    desc: 'Ideal para quem está começando',
-    features: [
-      'Cardápio digital ilimitado',
-      'Pedidos via delivery',
-      'QR Code geral',
-      'Relatórios básicos',
-      'Suporte via chat'
-    ]
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 99,
-    desc: 'Para restaurantes com salão',
-    highlight: true,
-    features: [
-      'Tudo do Starter',
-      'Gestão do Salão completa',
-      'QR Code por mesa',
-      'Identificação automática de mesa',
-      'Histórico de clientes'
-    ]
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: 149,
-    desc: 'Para operações maiores',
-    features: [
-      'Tudo do Pro',
-      'Personalização de cores do cardápio',
-      'Exportar relatórios em PDF',
-      'Seção de destaques no cardápio',
-      'Suporte prioritário via chat'
-    ]
-  }
-]
-
-const COMPARATIVO = [
-  { recurso: 'Cardápio digital', nexar: true, anotaai: true, ifood: true },
-  { recurso: 'Gestão de delivery', nexar: true, anotaai: true, ifood: true },
-  { recurso: 'Gestão do salão com QR Code por mesa', nexar: true, anotaai: false, ifood: false },
-  { recurso: 'Pedidos em tempo real', nexar: true, anotaai: true, ifood: false },
-  { recurso: 'Sem comissão por pedido', nexar: true, anotaai: true, ifood: false },
-  { recurso: 'Acompanhamento do pedido pelo cliente', nexar: true, anotaai: false, ifood: false },
-  { recurso: 'Relatórios completos', nexar: true, anotaai: false, ifood: false },
-  { recurso: 'Preço justo', nexar: true, anotaai: false, ifood: false },
-]
-
 export default function Landing() {
-  const [selectedPlan, setSelectedPlan] = useState('pro')
   const [cpfCnpj, setCpfCnpj] = useState('')
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
@@ -91,14 +36,14 @@ export default function Landing() {
     if (tenantError) { setError('Erro ao criar conta: ' + tenantError.message); setProcessing(false); return }
 
     await supabase.from('users').insert({ id: userId, tenant_id: tenant.id, email, name })
-    await supabase.from('subscriptions').insert({ tenant_id: tenant.id, status: 'pending', plan_name: selectedPlan })
+    await supabase.from('subscriptions').insert({ tenant_id: tenant.id, status: 'pending', plan_name: 'premium' })
 
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tenant_id: tenant.id,
-        plan_name: selectedPlan,
+        plan_name: 'premium',
         email,
         name,
         cpfCnpj: cpfCnpj.replace(/\D/g, ''),
@@ -111,6 +56,26 @@ export default function Landing() {
 
     window.location.href = data.payment_url
   }
+
+  const features = [
+    { icon: '📱', title: 'Cardápio Digital', desc: 'Seu cardápio sempre atualizado, acessível por QR Code em qualquer celular. Sem baixar aplicativo.' },
+    { icon: '🛵', title: 'Gestão de Delivery', desc: 'Receba pedidos com endereço, bairro e taxa de entrega calculada automaticamente.' },
+    { icon: '🪑', title: 'Gestão do Salão', desc: 'QR Code individual por mesa. O pedido chega identificado sem o garçom precisar perguntar nada.' },
+    { icon: '📋', title: 'Pedidos em Tempo Real', desc: 'Acompanhe cada pedido do recebimento até a entrega. Status atualizado automaticamente.' },
+    { icon: '📊', title: 'Relatórios Completos', desc: 'Faturamento do dia, ticket médio, produtos mais vendidos e bairros com mais pedidos.' },
+    { icon: '⚡', title: 'Configure em Minutos', desc: 'Cadastre seu restaurante, adicione os produtos e compartilhe o link. Sem complicação.' }
+  ]
+
+  const COMPARATIVO = [
+    { recurso: 'Cardápio digital', nexar: true, anotaai: true, ifood: true },
+    { recurso: 'Gestão de delivery', nexar: true, anotaai: true, ifood: true },
+    { recurso: 'Gestão do salão com QR Code por mesa', nexar: true, anotaai: false, ifood: false },
+    { recurso: 'Pedidos em tempo real', nexar: true, anotaai: true, ifood: false },
+    { recurso: 'Sem comissão por pedido', nexar: true, anotaai: true, ifood: false },
+    { recurso: 'Acompanhamento do pedido pelo cliente', nexar: true, anotaai: false, ifood: false },
+    { recurso: 'Relatórios completos', nexar: true, anotaai: false, ifood: false },
+    { recurso: 'Pagamento único — sem mensalidade', nexar: true, anotaai: false, ifood: false },
+  ]
 
   return (
     <div style={{ fontFamily: 'Segoe UI, sans-serif', background: '#fff', color: '#1A1A2E' }}>
@@ -131,17 +96,17 @@ export default function Landing() {
       </nav>
 
       {/* HERO */}
-      <section style={{ paddingTop: 120, paddingBottom: 80, background: 'linear-gradient(180deg, #F0FDF9 0%, #fff 100%)', textAlign: 'center', padding: '140px 24px 80px' }}>
+      <section style={{ paddingTop: 140, paddingBottom: 80, background: 'linear-gradient(180deg, #F0FDF9 0%, #fff 100%)', textAlign: 'center', padding: '140px 24px 80px' }}>
         <div style={{ maxWidth: 740, margin: '0 auto' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#1A1A2E', borderRadius: 20, padding: '6px 16px', fontSize: 13, color: '#fff', fontWeight: 600, marginBottom: 28 }}>
             <img src="/nexar.png" alt="Nexar" style={{ width: 16, height: 16, objectFit: 'contain' }} />
             Nexar Agency
           </div>
           <h1 style={{ fontSize: 52, fontWeight: 800, color: '#1A1A2E', margin: '0 0 20px', lineHeight: 1.15 }}>
-            Cardápio digital profissional para o seu negócio
+            Cardápio digital profissional por apenas <span style={{ color: '#00B894' }}>R$ 197</span>
           </h1>
           <p style={{ fontSize: 18, color: '#6C757D', margin: '0 0 16px', lineHeight: 1.7 }}>
-            Delivery, salão e relatórios em um só lugar. Receba pedidos em tempo real, gerencie suas mesas com QR Code e tenha o controle total do seu negócio.
+            Pagamento único, sem mensalidade. Delivery, salão e relatórios em um só lugar.
           </p>
           <p style={{ fontSize: 15, color: '#00B894', fontWeight: 600, margin: 0 }}>
             Desenvolvido pela Nexar Agency — tecnologia feita para o seu negócio crescer.
@@ -157,14 +122,7 @@ export default function Landing() {
             <p style={{ fontSize: 16, color: '#6C757D', margin: 0 }}>De delivery a salão, do cardápio aos relatórios — em um só sistema.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-            {[
-              { icon: '📱', title: 'Cardápio Digital', desc: 'Seu cardápio sempre atualizado, acessível por QR Code em qualquer celular. Sem baixar aplicativo.' },
-              { icon: '🛵', title: 'Gestão de Delivery', desc: 'Receba pedidos com endereço, bairro e taxa de entrega calculada automaticamente.' },
-              { icon: '🪑', title: 'Gestão do Salão', desc: 'QR Code individual por mesa. O pedido chega identificado sem o garçom precisar perguntar nada.' },
-              { icon: '📋', title: 'Pedidos em Tempo Real', desc: 'Acompanhe cada pedido do recebimento até a entrega. Status atualizado automaticamente.' },
-              { icon: '📊', title: 'Relatórios Completos', desc: 'Faturamento do dia, ticket médio, produtos mais vendidos e bairros com mais pedidos.' },
-              { icon: '⚡', title: 'Configure em Minutos', desc: 'Cadastre seu restaurante, adicione os produtos e compartilhe o link. Sem complicação.' }
-            ].map(f => (
+            {features.map(f => (
               <div key={f.title} style={{ background: '#F8F9FA', borderRadius: 14, padding: 28 }}>
                 <div style={{ fontSize: 36, marginBottom: 16 }}>{f.icon}</div>
                 <div style={{ fontWeight: 700, fontSize: 16, color: '#1A1A2E', marginBottom: 8 }}>{f.title}</div>
@@ -198,9 +156,9 @@ export default function Landing() {
               </div>
             ))}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '16px 24px', background: '#E8F8F5' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>Preço mensal</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#00B894', textAlign: 'center' }}>R$ 59–149</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#e53935', textAlign: 'center' }}>R$ 119–299</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>Preço</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#00B894', textAlign: 'center' }}>R$ 197 único</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#e53935', textAlign: 'center' }}>R$ 119+/mês</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#e53935', textAlign: 'center' }}>Comissão</div>
             </div>
           </div>
@@ -214,7 +172,7 @@ export default function Landing() {
           <p style={{ fontSize: 16, color: '#6C757D', margin: '0 0 56px' }}>Configure em menos de 5 minutos.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16 }}>
             {[
-              { step: '1', title: 'Assine o plano', desc: 'Escolha o plano ideal para o seu negócio' },
+              { step: '1', title: 'Adquira o sistema', desc: 'Pagamento único de R$ 197' },
               { step: '2', title: 'Monte o cardápio', desc: 'Adicione categorias, produtos e fotos' },
               { step: '3', title: 'Compartilhe o QR Code', desc: 'Gerado automaticamente na hora' },
               { step: '4', title: 'Receba pedidos', desc: 'Em tempo real no seu painel' }
@@ -231,51 +189,42 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* PLANOS + CHECKOUT */}
-      <section style={{ padding: '80px 24px', background: '#F8F9FA' }} id="planos">
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 700, margin: '0 0 12px' }}>Escolha seu plano</h2>
-            <p style={{ fontSize: 16, color: '#6C757D', margin: 0 }}>Sem fidelidade. Cancele quando quiser.</p>
+      {/* CHECKOUT */}
+      <section style={{ padding: '80px 24px', background: '#F8F9FA' }} id="adquirir">
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <h2 style={{ fontSize: 36, fontWeight: 700, margin: '0 0 12px' }}>Adquira agora</h2>
+            <p style={{ fontSize: 16, color: '#6C757D', margin: 0 }}>Pagamento único de <strong style={{ color: '#00B894' }}>R$ 197</strong>. Sem mensalidade. Sem fidelidade.</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 48 }}>
-            {PLANS.map(plan => (
-              <div key={plan.id} onClick={() => setSelectedPlan(plan.id)}
-                style={{ background: selectedPlan === plan.id ? '#00B894' : '#fff', border: selectedPlan === plan.id ? 'none' : '1px solid #E9ECEF', borderRadius: 16, padding: 28, cursor: 'pointer', position: 'relative', transition: 'all 0.15s' }}>
-                {plan.highlight && selectedPlan !== plan.id && (
-                  <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#1A1A2E', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 14px', borderRadius: 20, whiteSpace: 'nowrap' }}>
-                    MAIS POPULAR
+          <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 32, marginBottom: 20 }}>
+            <div style={{ background: '#E8F8F5', border: '1px solid #00B894', borderRadius: 12, padding: '16px 20px', marginBottom: 24 }}>
+              <div style={{ fontWeight: 700, fontSize: 16, color: '#00B894', marginBottom: 8 }}>Nexar - Cardápio Digital</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[
+                  'Cardápio digital ilimitado',
+                  'Gestão de delivery com taxa por bairro',
+                  'Gestão do Salão + QR Code por mesa',
+                  'Pedidos em tempo real',
+                  'Relatórios completos + exportar PDF',
+                  'Histórico de clientes',
+                  'Personalização de cores',
+                  'Seção de destaques',
+                  'Suporte via chat'
+                ].map(f => (
+                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: '#00B894', fontSize: 12, fontWeight: 700 }}>✓</span>
+                    <span style={{ fontSize: 13, color: '#1A1A2E' }}>{f}</span>
                   </div>
-                )}
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: selectedPlan === plan.id ? '#fff' : '#1A1A2E', marginBottom: 4 }}>{plan.name}</div>
-                  <div style={{ fontSize: 13, color: selectedPlan === plan.id ? 'rgba(255,255,255,0.75)' : '#6C757D' }}>{plan.desc}</div>
-                </div>
-                <div style={{ marginBottom: 20 }}>
-                  <span style={{ fontSize: 38, fontWeight: 800, color: selectedPlan === plan.id ? '#fff' : '#1A1A2E' }}>R$ {plan.price}</span>
-                  <span style={{ fontSize: 14, color: selectedPlan === plan.id ? 'rgba(255,255,255,0.75)' : '#6C757D' }}>/mês</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {plan.features.map(f => (
-                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 16, height: 16, background: selectedPlan === plan.id ? 'rgba(255,255,255,0.2)' : '#E8F8F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: selectedPlan === plan.id ? '#fff' : '#00B894', fontWeight: 700, flexShrink: 0 }}>✓</div>
-                      <span style={{ fontSize: 13, color: selectedPlan === plan.id ? 'rgba(255,255,255,0.9)' : '#6C757D' }}>{f}</span>
-                    </div>
-                  ))}
-                </div>
-                {selectedPlan === plan.id && (
-                  <div style={{ marginTop: 16, padding: '6px', background: 'rgba(255,255,255,0.2)', borderRadius: 8, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
-                    Selecionado
-                  </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #00B89430', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 14, color: '#6C757D' }}>Total</span>
+                <span style={{ fontSize: 28, fontWeight: 800, color: '#00B894' }}>R$ 197</span>
+              </div>
+            </div>
 
-          {/* FORMULÁRIO */}
-          <div style={{ maxWidth: 480, margin: '0 auto', background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 32 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 20 }}>SEUS DADOS</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>SEUS DADOS</div>
 
             <input type="text" placeholder="Nome do restaurante *" value={name}
               onChange={e => setName(e.target.value)}
@@ -305,11 +254,11 @@ export default function Landing() {
 
             <button onClick={handleSubscribe} disabled={processing}
               style={{ width: '100%', padding: '14px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
-              {processing ? 'Processando...' : 'Assinar plano ' + PLANS.find(p => p.id === selectedPlan)?.name + ' — R$ ' + PLANS.find(p => p.id === selectedPlan)?.price + '/mês'}
+              {processing ? 'Processando...' : 'Adquirir por R$ 197'}
             </button>
 
             <p style={{ textAlign: 'center', fontSize: 12, color: '#adb5bd', margin: '12px 0 0' }}>
-              Pagamento seguro. Sem fidelidade. Cancele quando quiser.
+              Pagamento seguro. Sem mensalidade. Sem fidelidade.
             </p>
           </div>
         </div>
