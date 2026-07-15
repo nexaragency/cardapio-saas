@@ -20,7 +20,10 @@ function CadastroForm() {
   useEffect(() => {
     async function checkInvite() {
       const code = searchParams.get('convite')
-      if (!code) { setCheckingInvite(false); return }
+      if (!code) {
+        router.replace('/landing')
+        return
+      }
 
       const { data } = await supabase
         .from('invites')
@@ -32,6 +35,8 @@ function CadastroForm() {
       if (data) {
         setInviteCode(code.toUpperCase())
         setInviteValid(true)
+      } else {
+        router.replace('/landing')
       }
       setCheckingInvite(false)
     }
@@ -85,32 +90,7 @@ function CadastroForm() {
     </div>
   )
 
-  if (!inviteValid) {
-  if (typeof window !== 'undefined') {
-    window.location.href = '/landing'
-  }
-  return null
-}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F8F9FA', fontFamily: 'Segoe UI, sans-serif', padding: 24 }}>
-      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 40, textAlign: 'center', maxWidth: 400, width: '100%' }}>
-        <div style={{ width: 48, height: 48, background: '#1A1A2E', borderRadius: 12, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-          <img src="/nexar.png" alt="Nexar" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-        </div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A2E', margin: '0 0 10px' }}>Acesso por convite</h2>
-        <p style={{ color: '#6C757D', fontSize: 14, margin: '0 0 24px', lineHeight: 1.6 }}>
-          O cadastro no Nexar - Cardápio Digital é feito apenas por convite. Entre em contato com a Nexar Agency para solicitar o seu.
-        </p>
-        <a href="https://wa.me/5544991171548" target="_blank"
-          style={{ display: 'block', padding: '12px', background: '#25D366', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
-          Solicitar convite via WhatsApp
-        </a>
-        <a href="/"
-          style={{ display: 'block', padding: '12px', background: '#F8F9FA', color: '#6C757D', borderRadius: 8, textDecoration: 'none', fontSize: 14 }}>
-          Voltar ao início
-        </a>
-      </div>
-    </div>
-  )
+  if (!inviteValid) return null
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Segoe UI, sans-serif' }}>
