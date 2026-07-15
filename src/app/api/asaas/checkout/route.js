@@ -11,23 +11,12 @@ const ASAAS_API_URL = process.env.ASAAS_ENV === 'sandbox'
 
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY
 
-const PLANS = {
-  starter: { name: 'QRDapio Starter', value: 59.00 },
-  pro: { name: 'QRDapio Pro', value: 99.00 },
-  premium: { name: 'QRDapio Premium', value: 149.00 }
-}
-
 export async function POST(request) {
   try {
-    const { tenant_id, plan_name, email, name, cpfCnpj, phone } = await request.json()
+    const { tenant_id, email, name, cpfCnpj, phone } = await request.json()
 
-    if (!tenant_id || !plan_name || !email || !name || !cpfCnpj) {
+    if (!tenant_id || !email || !name || !cpfCnpj) {
       return Response.json({ error: 'Dados incompletos' }, { status: 400 })
-    }
-
-    const plan = PLANS[plan_name]
-    if (!plan) {
-      return Response.json({ error: 'Plano invalido' }, { status: 400 })
     }
 
     // 1. Cria cliente no Asaas
@@ -55,9 +44,9 @@ export async function POST(request) {
       return Response.json({ error: 'Erro cliente: ' + JSON.stringify(customer) }, { status: 500 })
     }
 
-    // 2. Gera link de pagamento recorrente
+    // 2. Gera link de pagamento único
     const nextDueDate = new Date()
-    nextDueDate.setDate(nextDueDate.getDate() + 7)
+    nextDueDate.setDate(nextDueDate.getDate() + 3)
     const dueDateStr = nextDueDate.toISOString().split('T')[0]
 
     const chargeRes = await fetch(ASAAS_API_URL + '/paymentLinks', {
@@ -67,13 +56,11 @@ export async function POST(request) {
         'access_token': ASAAS_API_KEY
       },
       body: JSON.stringify({
-        name: plan.name,
-        description: 'Assinatura ' + plan.name + ' - QRDapio',
-        endDate: dueDateStr,
-        value: plan.value,
+        name: 'Nexar - Cardapio Digital',
+        description: 'Aquisicao do Nexar - Cardapio Digital — Pagamento unico',
+        value: 197.00,
         billingType: 'UNDEFINED',
-        chargeType: 'RECURRENT',
-        cycle: 'MONTHLY',
+        chargeType: 'DETACHED',
         dueDateLimitDays: 3,
         externalReference: tenant_id
       })
@@ -90,7 +77,7 @@ export async function POST(request) {
 
     // 3. Atualiza subscription no Supabase
     await supabase.from('subscriptions').update({
-      plan_name,
+      plan_name: 'premium',
       asaas_customer_id: customer.id,
       status: 'pending'
     }).eq('tenant_id', tenant_id)
