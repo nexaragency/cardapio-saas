@@ -104,8 +104,7 @@ setPrimaryColor(userData.tenants.primary_color || '#00B894')
 
   if (loading) return <p style={{ color: '#6C757D', padding: 24 }}>Carregando...</p>
 
-  const cardapioUrl = 'https://cardapio-saas-virid.vercel.app/cardapio/' + form.slug
-
+const cardapioUrl = 'https://cardapio.nexarmkt.com.br/cardapio/' + form.slug
   return (
     <div style={{ maxWidth: 620 }}>
       <div style={{ marginBottom: 32 }}>
