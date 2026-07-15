@@ -85,7 +85,12 @@ function CadastroForm() {
     </div>
   )
 
-  if (!inviteValid) return (
+  if (!inviteValid) {
+  if (typeof window !== 'undefined') {
+    window.location.href = '/landing'
+  }
+  return null
+}
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F8F9FA', fontFamily: 'Segoe UI, sans-serif', padding: 24 }}>
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 16, padding: 40, textAlign: 'center', maxWidth: 400, width: '100%' }}>
         <div style={{ width: 48, height: 48, background: '#1A1A2E', borderRadius: 12, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
