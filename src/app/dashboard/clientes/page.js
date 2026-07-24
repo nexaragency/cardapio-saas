@@ -38,6 +38,11 @@ export default function Clientes() {
 
     if (!orders) return
 
+    const { data: customers } = await supabase
+      .from('customers').select('phone, cashback_balance').eq('tenant_id', tid)
+    const balanceByPhone = {}
+    for (const c of (customers || [])) balanceByPhone[c.phone] = Number(c.cashback_balance || 0)
+
     const map = {}
     orders.forEach(order => {
       const phone = order.customer_phone || 'sem-telefone-' + order.customer_name
@@ -49,7 +54,8 @@ export default function Clientes() {
           city: order.city || '—',
           orders: [],
           total: 0,
-          lastOrder: order.created_at
+          lastOrder: order.created_at,
+          cashbackBalance: balanceByPhone[order.customer_phone] || 0
         }
       }
       map[phone].orders.push(order)
@@ -132,6 +138,9 @@ export default function Clientes() {
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#00B894' }}>R$ {cliente.total.toFixed(2)}</div>
                 <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>{cliente.orders.length + ' pedido(s)'}</div>
+                {cliente.cashbackBalance > 0 && (
+                  <div style={{ fontSize: 11, color: '#B8860B', marginTop: 2, fontWeight: 600 }}>💰 R$ {cliente.cashbackBalance.toFixed(2)} em cashback</div>
+                )}
               </div>
             </div>
 

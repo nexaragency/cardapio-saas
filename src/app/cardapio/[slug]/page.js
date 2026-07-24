@@ -18,6 +18,13 @@ const STATUS_DESC = {
   saiu_entrega: 'O motoboy está a caminho!',
   entregue: 'Pedido entregue. Bom apetite!'
 }
+const DIETARY_TAGS = {
+  vegetariano: { label: 'Vegetariano', icon: '🌱' },
+  vegano: { label: 'Vegano', icon: '🌿' },
+  sem_gluten: { label: 'Sem Glúten', icon: '🌾' },
+  sem_lactose: { label: 'Sem Lactose', icon: '🥛' },
+  picante: { label: 'Picante', icon: '🌶️' }
+}
 
 export default function CardapioPublico({ params }) {
   const { slug } = use(params)
@@ -46,6 +53,20 @@ export default function CardapioPublico({ params }) {
   })
   const [deliveryFee, setDeliveryFee] = useState(null)
   const [neighborhoodError, setNeighborhoodError] = useState('')
+  const [bestsellerIds, setBestsellerIds] = useState([])
+  const [couponCode, setCouponCode] = useState('')
+  const [couponApplied, setCouponApplied] = useState(null)
+  const [couponError, setCouponError] = useState('')
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [cashbackBalance, setCashbackBalance] = useState(0)
+  const [useCashback, setUseCashback] = useState(false)
+  const [deliveryTiming, setDeliveryTiming] = useState('now')
+  const [scheduledFor, setScheduledFor] = useState('')
+  const [lastOrder, setLastOrder] = useState(null)
+  const [ratingValue, setRatingValue] = useState(0)
+  const [ratingComment, setRatingComment] = useState('')
+  const [ratingSubmitted, setRatingSubmitted] = useState(false)
+  const [ratingSubmitting, setRatingSubmitting] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -90,6 +111,11 @@ export default function CardapioPublico({ params }) {
         .from('delivery_zones').select('*')
         .eq('tenant_id', tenantData.id).eq('active', true)
       setZones(zns || [])
+
+      fetch('/api/public/bestsellers?slug=' + slug)
+        .then(res => res.json())
+        .then(data => setBestsellerIds(data.productIds || []))
+        .catch(() => {})
 
       const urlParams = new URLSearchParams(window.location.search)
       const mesa = urlParams.get('mesa')
@@ -145,11 +171,62 @@ export default function CardapioPublico({ params }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug, phone })
     })
-    const { customer: data } = await res.json()
+    const { customer: data, cashback_balance, lastOrder: lastOrderData } = await res.json()
     if (data) {
       setForm(prev => ({ ...prev, name: data.name || prev.name, address: data.address || prev.address, neighborhood: data.neighborhood || prev.neighborhood, city: data.city || prev.city }))
       if (data.neighborhood) checkDeliveryFee(data.neighborhood)
     }
+    setCashbackBalance(cashback_balance || 0)
+    setLastOrder(lastOrderData || null)
+  }
+
+  function repeatLastOrder() {
+    if (!lastOrder) return
+    const newItems = []
+    let skipped = 0
+    for (const item of lastOrder.items) {
+      const product = products.find(p => p.id === item.product_id && p.active)
+      if (!product) { skipped++; continue }
+      newItems.push({
+        id: product.id + Date.now() + Math.random(),
+        productId: product.id,
+        variationId: null,
+        name: product.name,
+        price: Number(product.price),
+        addons: [],
+        observation: item.observation || '',
+        qty: item.quantity,
+        image_url: product.image_url
+      })
+    }
+    setCart(prev => [...prev, ...newItems])
+    if (skipped > 0) alert(skipped + ' item(ns) do pedido anterior nao estao mais disponiveis e foram ignorados.')
+    setStep('checkout')
+  }
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return
+    setCouponLoading(true)
+    setCouponError('')
+    const res = await fetch('/api/public/coupons/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, code: couponCode, subtotal: getSubtotal() })
+    })
+    const data = await res.json()
+    setCouponLoading(false)
+    if (!data.valid) {
+      setCouponError(data.message || 'Cupom invalido')
+      setCouponApplied(null)
+      return
+    }
+    setCouponApplied({ code: couponCode.trim().toUpperCase(), discount_amount: data.discount_amount })
+  }
+
+  function removeCoupon() {
+    setCouponApplied(null)
+    setCouponCode('')
+    setCouponError('')
   }
 
   function checkDeliveryFee(neighborhood) {
@@ -229,7 +306,13 @@ export default function CardapioPublico({ params }) {
   }
 
   function getSubtotal() { return cart.reduce((sum, i) => sum + getItemTotal(i), 0) }
-  function getTotal() { return getSubtotal() + (deliveryFee || 0) }
+  function getDiscount() { return couponApplied ? couponApplied.discount_amount : 0 }
+  function getCashbackApplied() {
+    if (!useCashback || tableNumber) return 0
+    const maxUsable = Math.max(0, getSubtotal() + (deliveryFee || 0) - getDiscount())
+    return Math.min(cashbackBalance, maxUsable)
+  }
+  function getTotal() { return Math.max(0, getSubtotal() + (deliveryFee || 0) - getDiscount() - getCashbackApplied()) }
   function getTotalItems() { return cart.reduce((sum, i) => sum + i.qty, 0) }
 
   async function handleSubmitOrder() {
@@ -257,7 +340,10 @@ export default function CardapioPublico({ params }) {
           observation: item.observation,
           addons: item.addons.map(a => ({ id: a.id }))
         })),
-        form
+        form,
+        couponCode: couponApplied ? couponApplied.code : null,
+        cashbackUsed: getCashbackApplied(),
+        scheduledFor: (!tableNumber && deliveryTiming === 'scheduled' && scheduledFor) ? new Date(scheduledFor).toISOString() : null
       })
     })
 
@@ -267,8 +353,28 @@ export default function CardapioPublico({ params }) {
     localStorage.setItem('order_' + slug, data.order.id)
     setCurrentOrder(data.order)
     setCart([])
+    setCouponApplied(null)
+    setCouponCode('')
+    setUseCashback(false)
+    setDeliveryTiming('now')
+    setScheduledFor('')
+    setRatingValue(0)
+    setRatingComment('')
+    setRatingSubmitted(false)
     setSubmitting(false)
     setStep('tracking')
+  }
+
+  async function submitRating() {
+    if (!currentOrder || ratingValue < 1) return
+    setRatingSubmitting(true)
+    const res = await fetch('/api/public/orders/' + currentOrder.id + '/rate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: ratingValue, comment: ratingComment })
+    })
+    setRatingSubmitting(false)
+    if (res.ok) setRatingSubmitted(true)
   }
 
   const filteredProducts = products.filter(p => {
@@ -364,6 +470,32 @@ export default function CardapioPublico({ params }) {
               <span style={{ color: cor }}>R$ {Number(currentOrder.total).toFixed(2)}</span>
             </div>
           </div>
+          {isDelivered && !currentOrder.rating && (
+            <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+              {ratingSubmitted ? (
+                <p style={{ textAlign: 'center', color: cor, fontWeight: 600, fontSize: 14, margin: 0 }}>Obrigado pela avaliação! 🎉</p>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 12 }}>COMO FOI SEU PEDIDO?</div>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 12, justifyContent: 'center' }}>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button key={n} onClick={() => setRatingValue(n)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 28, padding: 0, opacity: n <= ratingValue ? 1 : 0.3 }}>
+                        ⭐
+                      </button>
+                    ))}
+                  </div>
+                  <textarea placeholder="Deixe um comentário (opcional)" value={ratingComment}
+                    onChange={e => setRatingComment(e.target.value)}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', resize: 'none', height: 70, boxSizing: 'border-box', marginBottom: 12 }} />
+                  <button onClick={submitRating} disabled={ratingValue < 1 || ratingSubmitting}
+                    style={{ width: '100%', padding: '12px', background: ratingValue < 1 ? '#E9ECEF' : cor, color: '#fff', border: 'none', borderRadius: 8, cursor: ratingValue < 1 ? 'default' : 'pointer', fontSize: 14, fontWeight: 700 }}>
+                    {ratingSubmitting ? 'Enviando...' : 'Enviar avaliação'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           {isDelivered ? (
             <button onClick={() => { setStep('menu'); setCurrentOrder(null); localStorage.removeItem('order_' + slug) }}
               style={{ width: '100%', padding: '14px', background: cor, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
@@ -463,6 +595,36 @@ export default function CardapioPublico({ params }) {
             </div>
           )}
 
+          {bestsellerIds.length > 0 && !searchTerm && (
+            <div style={{ marginBottom: 28 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', marginBottom: 14 }}>🔥 Mais pedidos</h2>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+                {bestsellerIds
+                  .map(id => products.find(p => p.id === id && !addonCategories.some(c => c.id === p.category_id)))
+                  .filter(Boolean)
+                  .map(product => {
+                    const minPrice = product.product_variations?.length > 0
+                      ? Math.min(...product.product_variations.map(v => Number(v.price)))
+                      : null
+                    return (
+                      <div key={product.id} onClick={() => openProductModal(product)}
+                        style={{ minWidth: 200, background: '#fff', borderRadius: 12, border: '1px solid #E9ECEF', overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}>
+                        {product.image_url && (
+                          <img src={product.image_url} alt={product.name} style={{ width: '100%', height: 120, objectFit: 'cover' }} />
+                        )}
+                        <div style={{ padding: '10px 12px' }}>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: cor }}>
+                            {minPrice !== null ? 'A partir de R$ ' + minPrice.toFixed(2) : 'R$ ' + Number(product.price).toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+
           {filteredProducts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '48px 0', color: '#6C757D' }}>
               <div style={{ fontSize: 32, marginBottom: 12 }}>🍽️</div>
@@ -475,25 +637,37 @@ export default function CardapioPublico({ params }) {
               const minPrice = product.product_variations?.length > 0
                 ? Math.min(...product.product_variations.map(v => Number(v.price)))
                 : null
+              const outOfStock = product.stock_enabled && Number(product.stock_quantity) <= 0
               return (
-                <div key={product.id} onClick={() => openProductModal(product)}
-                  style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9ECEF', overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
+                <div key={product.id} onClick={() => !outOfStock && openProductModal(product)}
+                  style={{ background: '#fff', borderRadius: 12, border: '1px solid #E9ECEF', overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: outOfStock ? 'default' : 'pointer', opacity: outOfStock ? 0.5 : 1 }}>
                   {product.image_url && (
                     <img src={product.image_url} alt={product.name} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
                   )}
                   <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontWeight: 700, fontSize: 14, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
+                    {product.dietary_tags?.length > 0 && (
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
+                        {product.dietary_tags.map(tag => DIETARY_TAGS[tag] && (
+                          <span key={tag} style={{ fontSize: 10, fontWeight: 600, color: '#6C757D', background: '#F8F9FA', padding: '2px 6px', borderRadius: 10 }}>
+                            {DIETARY_TAGS[tag].icon} {DIETARY_TAGS[tag].label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {product.description && (
                       <div style={{ fontSize: 12, color: '#6C757D', marginBottom: 8, lineHeight: 1.4, flex: 1 }}>{product.description}</div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: cor }}>
-                        {minPrice !== null ? 'A partir de R$ ' + minPrice.toFixed(2) : 'R$ ' + Number(product.price).toFixed(2)}
+                        {outOfStock ? 'Esgotado' : minPrice !== null ? 'A partir de R$ ' + minPrice.toFixed(2) : 'R$ ' + Number(product.price).toFixed(2)}
                       </div>
-                      <button onClick={e => { e.stopPropagation(); openProductModal(product) }}
-                        style={{ padding: '6px 16px', background: cor, color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                        Adicionar
-                      </button>
+                      {!outOfStock && (
+                        <button onClick={e => { e.stopPropagation(); openProductModal(product) }}
+                          style={{ padding: '6px 16px', background: cor, color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                          Adicionar
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -516,6 +690,15 @@ export default function CardapioPublico({ params }) {
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>{selectedProduct.name}</h2>
                 <button onClick={closeModal} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#6C757D', lineHeight: 1 }}>×</button>
               </div>
+              {selectedProduct.dietary_tags?.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {selectedProduct.dietary_tags.map(tag => DIETARY_TAGS[tag] && (
+                    <span key={tag} style={{ fontSize: 11, fontWeight: 600, color: '#6C757D', background: '#F8F9FA', padding: '3px 8px', borderRadius: 10 }}>
+                      {DIETARY_TAGS[tag].icon} {DIETARY_TAGS[tag].label}
+                    </span>
+                  ))}
+                </div>
+              )}
               {selectedProduct.description && (
                 <p style={{ fontSize: 14, color: '#6C757D', margin: '0 0 20px', lineHeight: 1.6 }}>{selectedProduct.description}</p>
               )}
@@ -622,6 +805,55 @@ export default function CardapioPublico({ params }) {
             </div>
           )}
 
+          {!tableNumber && lastOrder && (
+            <div style={{ background: cor + '10', border: '1px solid ' + cor, borderRadius: 12, padding: '14px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: cor }}>🔁 Pedir novamente</div>
+                <div style={{ fontSize: 12, color: '#6C757D' }}>
+                  Último pedido de {new Date(lastOrder.created_at).toLocaleDateString('pt-BR')} — R$ {Number(lastOrder.total).toFixed(2)}
+                </div>
+              </div>
+              <button onClick={repeatLastOrder}
+                style={{ padding: '8px 16px', background: cor, color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                Repetir pedido
+              </button>
+            </div>
+          )}
+
+          {(() => {
+            const cartProductIds = new Set(cart.map(i => i.productId))
+            const suggestions = products.filter(p =>
+              p.featured && !addonCategories.some(c => c.id === p.category_id) &&
+              !cartProductIds.has(p.id) && !(p.stock_enabled && Number(p.stock_quantity) <= 0)
+            ).slice(0, 4)
+            if (suggestions.length === 0) return null
+            return (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 10 }}>PEÇA TAMBÉM</div>
+                <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
+                  {suggestions.map(product => (
+                    <div key={product.id} style={{ minWidth: 140, background: '#fff', border: '1px solid #E9ECEF', borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
+                      {product.image_url && (
+                        <img src={product.image_url} alt={product.name} style={{ width: '100%', height: 80, objectFit: 'cover' }} />
+                      )}
+                      <div style={{ padding: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E', marginBottom: 4 }}>{product.name}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: cor, marginBottom: 6 }}>R$ {Number(product.price).toFixed(2)}</div>
+                        <button onClick={() => {
+                          if (product.product_variations?.length > 0) { openProductModal(product); setStep('menu') }
+                          else setCart(prev => [...prev, { id: product.id + Date.now(), productId: product.id, variationId: null, name: product.name, price: Number(product.price), addons: [], observation: '', qty: 1, image_url: product.image_url }])
+                        }}
+                          style={{ width: '100%', padding: '5px', background: cor + '15', color: cor, border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
+                          + Adicionar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
           <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>RESUMO DO PEDIDO</div>
             {cart.map(item => (
@@ -660,18 +892,85 @@ export default function CardapioPublico({ params }) {
                 </span>
               </div>
             )}
+            {getDiscount() > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                <span style={{ fontSize: 14, color: '#6C757D' }}>Cupom {couponApplied ? '(' + couponApplied.code + ')' : ''}</span>
+                <span style={{ fontSize: 14, color: '#00B894' }}>- R$ {getDiscount().toFixed(2)}</span>
+              </div>
+            )}
+            {getCashbackApplied() > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                <span style={{ fontSize: 14, color: '#6C757D' }}>Cashback usado</span>
+                <span style={{ fontSize: 14, color: '#00B894' }}>- R$ {getCashbackApplied().toFixed(2)}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', borderTop: '1px solid #E9ECEF', marginTop: 4 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: '#1A1A2E' }}>Total</span>
               <span style={{ fontSize: 15, fontWeight: 700, color: cor }}>
-                R$ {tableNumber ? getSubtotal().toFixed(2) : getTotal().toFixed(2)}
+                R$ {tableNumber ? Math.max(0, getSubtotal() - getDiscount()).toFixed(2) : getTotal().toFixed(2)}
               </span>
             </div>
           </div>
 
+          {!tableNumber && (
+            <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>CUPOM DE DESCONTO</div>
+              {couponApplied ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#00B894' }}>✓ {couponApplied.code} aplicado</span>
+                  <button onClick={removeCoupon} style={{ background: 'none', border: 'none', color: '#e53935', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Remover</button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="text" placeholder="Código do cupom" value={couponCode}
+                      onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                      style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', textTransform: 'uppercase' }} />
+                    <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()}
+                      style={{ padding: '10px 18px', background: cor, color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {couponLoading ? '...' : 'Aplicar'}
+                    </button>
+                  </div>
+                  {couponError && <p style={{ color: '#e53935', fontSize: 12, margin: '8px 0 0' }}>{couponError}</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!tableNumber && tenant.cashback_enabled && cashbackBalance > 0 && (
+            <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>💰 Usar cashback (saldo: R$ {cashbackBalance.toFixed(2)})</span>
+                <input type="checkbox" checked={useCashback} onChange={e => setUseCashback(e.target.checked)}
+                  style={{ width: 18, height: 18, cursor: 'pointer' }} />
+              </label>
+            </div>
+          )}
+
+          {!tableNumber && (
+            <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>QUANDO VOCÊ QUER RECEBER?</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: deliveryTiming === 'scheduled' ? 12 : 0 }}>
+                {['now', 'scheduled'].map(timing => (
+                  <button key={timing} onClick={() => setDeliveryTiming(timing)}
+                    style={{ padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: deliveryTiming === timing ? '2px solid ' + cor : '1px solid #E9ECEF', background: deliveryTiming === timing ? cor + '15' : '#fff', color: deliveryTiming === timing ? cor : '#6C757D' }}>
+                    {timing === 'now' ? 'Assim que possível' : 'Agendar'}
+                  </button>
+                ))}
+              </div>
+              {deliveryTiming === 'scheduled' && (
+                <input type="datetime-local" value={scheduledFor}
+                  min={new Date(Date.now() + 30 * 60000).toISOString().slice(0, 16)}
+                  onChange={e => setScheduledFor(e.target.value)}
+                  style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+              )}
+            </div>
+          )}
+
           {tableNumber ? (
             <button onClick={handleSubmitOrder} disabled={submitting}
               style={{ width: '100%', padding: '14px', background: cor, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
-              {submitting ? 'Enviando pedido...' : 'Confirmar pedido — R$ ' + getSubtotal().toFixed(2)}
+              {submitting ? 'Enviando pedido...' : 'Confirmar pedido — R$ ' + Math.max(0, getSubtotal() - getDiscount()).toFixed(2)}
             </button>
           ) : (
             <>

@@ -15,6 +15,11 @@ export default function Salao() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ number: '', capacity: '4' })
   const [error, setError] = useState('')
+  const [openOrdersByTable, setOpenOrdersByTable] = useState({})
+  const [transferringTable, setTransferringTable] = useState(null)
+  const [transferTarget, setTransferTarget] = useState('')
+  const [splittingTable, setSplittingTable] = useState(null)
+  const [splitPeople, setSplitPeople] = useState('2')
 
   useEffect(() => {
     async function loadData() {
@@ -51,6 +56,36 @@ export default function Salao() {
       .from('tables').select('*')
       .eq('tenant_id', tid).order('number')
     setTables(data || [])
+    loadOpenOrders(tid)
+  }
+
+  async function loadOpenOrders(tid) {
+    const { data } = await supabase
+      .from('orders').select('id, table_number, total')
+      .eq('tenant_id', tid).eq('order_type', 'salao').neq('status', 'entregue')
+    const map = {}
+    for (const order of (data || [])) {
+      if (!map[order.table_number]) map[order.table_number] = []
+      map[order.table_number].push(order)
+    }
+    setOpenOrdersByTable(map)
+  }
+
+  async function handleTransfer(fromTable) {
+    if (!transferTarget || parseInt(transferTarget) === fromTable) return
+    const orders = openOrdersByTable[fromTable] || []
+    for (const order of orders) {
+      await supabase.from('orders').update({ table_number: parseInt(transferTarget) }).eq('id', order.id)
+    }
+    await supabase.from('tables').update({ status: 'ocupada' }).eq('tenant_id', tenantId).eq('number', parseInt(transferTarget))
+    await supabase.from('tables').update({ status: 'livre' }).eq('tenant_id', tenantId).eq('number', fromTable)
+    setTransferringTable(null)
+    setTransferTarget('')
+    loadTables(tenantId)
+  }
+
+  function tableTotal(tableNumber) {
+    return (openOrdersByTable[tableNumber] || []).reduce((sum, o) => sum + Number(o.total), 0)
   }
 
   async function handleAdd() {
@@ -242,6 +277,57 @@ export default function Salao() {
                 </button>
               ))}
             </div>
+
+            {table.status === 'ocupada' && (openOrdersByTable[table.number] || []).length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: '#6C757D', marginBottom: 8 }}>
+                  Conta aberta: <strong style={{ color: '#1A1A2E' }}>R$ {tableTotal(table.number).toFixed(2)}</strong>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <button
+                    onClick={() => { setTransferringTable(transferringTable === table.number ? null : table.number); setSplittingTable(null) }}
+                    style={{ flex: 1, padding: '7px', background: '#F0F4FF', color: '#4A6CF7', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                  >
+                    Transferir mesa
+                  </button>
+                  <button
+                    onClick={() => { setSplittingTable(splittingTable === table.number ? null : table.number); setTransferringTable(null) }}
+                    style={{ flex: 1, padding: '7px', background: '#FFF8E8', color: '#B8860B', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                  >
+                    Dividir conta
+                  </button>
+                </div>
+
+                {transferringTable === table.number && (
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                    <select value={transferTarget} onChange={e => setTransferTarget(e.target.value)}
+                      style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid #E9ECEF', fontSize: 12 }}>
+                      <option value="">Mesa destino...</option>
+                      {tables.filter(t => t.number !== table.number).map(t => (
+                        <option key={t.id} value={t.number}>Mesa {t.number}</option>
+                      ))}
+                    </select>
+                    <button onClick={() => handleTransfer(table.number)}
+                      style={{ padding: '6px 12px', background: '#4A6CF7', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                      Ok
+                    </button>
+                  </div>
+                )}
+
+                {splittingTable === table.number && (
+                  <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, color: '#6C757D' }}>Pessoas:</span>
+                      <input type="number" min="1" value={splitPeople} onChange={e => setSplitPeople(e.target.value)}
+                        style={{ width: 60, padding: '4px 8px', borderRadius: 6, border: '1px solid #E9ECEF', fontSize: 12 }} />
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
+                      R$ {(tableTotal(table.number) / Math.max(1, parseInt(splitPeople) || 1)).toFixed(2)} por pessoa
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button

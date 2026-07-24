@@ -19,7 +19,8 @@ const [primaryColor, setPrimaryColor] = useState('#00B894')
   const [logoPreview, setLogoPreview] = useState(null)
   const [form, setForm] = useState({
     name: '', phone: '', slug: '', city: '',
-    open_time: '18:00', close_time: '23:00'
+    open_time: '18:00', close_time: '23:00',
+    cashback_enabled: false, cashback_percent: '5'
   })
 
   useEffect(() => {
@@ -36,7 +37,9 @@ const [primaryColor, setPrimaryColor] = useState('#00B894')
   slug: userData.tenants.slug || '',
   city: userData.tenants.city || '',
   open_time: userData.tenants.open_time || '18:00',
-  close_time: userData.tenants.close_time || '23:00'
+  close_time: userData.tenants.close_time || '23:00',
+  cashback_enabled: userData.tenants.cashback_enabled || false,
+  cashback_percent: userData.tenants.cashback_percent ?? '5'
 })
 setPrimaryColor(userData.tenants.primary_color || '#00B894')
         if (userData.tenants.banner_url) setBannerPreview(userData.tenants.banner_url)
@@ -82,7 +85,9 @@ setPrimaryColor(userData.tenants.primary_color || '#00B894')
   city: form.city,
   open_time: form.open_time,
   close_time: form.close_time,
-  primary_color: primaryColor
+  primary_color: primaryColor,
+  cashback_enabled: form.cashback_enabled,
+  cashback_percent: form.cashback_percent ? parseFloat(form.cashback_percent) : 0
 }
 
     if (bannerFile) {
@@ -224,6 +229,27 @@ const cardapioUrl = 'https://cardapio.nexarmkt.com.br/cardapio/' + form.slug
         <p style={{ margin: '10px 0 0', fontSize: 12, color: '#6C757D' }}>
           O cardápio mostrará automaticamente se o restaurante está aberto ou fechado.
         </p>
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 16 }}>CASHBACK / FIDELIDADE</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: form.cashback_enabled ? 16 : 0 }}>
+          <input type="checkbox" checked={form.cashback_enabled}
+            onChange={e => setForm({ ...form, cashback_enabled: e.target.checked })}
+            style={{ width: 16, height: 16, cursor: 'pointer' }} />
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>Ativar cashback para clientes</span>
+        </label>
+        {form.cashback_enabled && (
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Percentual de cashback (%)</label>
+            <input type="number" placeholder="Ex: 5" value={form.cashback_percent}
+              onChange={e => setForm({ ...form, cashback_percent: e.target.value })}
+              style={{ display: 'block', width: 160, padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+            <p style={{ margin: '8px 0 0', fontSize: 12, color: '#6C757D' }}>
+              O cliente acumula esse percentual do valor do pedido em saldo assim que o pedido é marcado como entregue, e pode usar o saldo para abater pedidos futuros.
+            </p>
+          </div>
+        )}
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>

@@ -130,6 +130,7 @@ export default function DashboardLayout({ children }) {
           <a href="/dashboard" style={linkStyle('/dashboard')}>Início</a>
           <a href="/dashboard/produtos" style={linkStyle('/dashboard/produtos')}>Produtos</a>
           <a href="/dashboard/categorias" style={linkStyle('/dashboard/categorias')}>Categorias</a>
+          <a href="/dashboard/cupons" style={linkStyle('/dashboard/cupons')}>Cupons</a>
           <a href="/dashboard/pedidos" style={linkStyle('/dashboard/pedidos')}>Pedidos</a>
           <a href="/dashboard/relatorios" style={linkStyle('/dashboard/relatorios')}>Relatórios</a>
 <a href="/dashboard/clientes" style={linkStyle('/dashboard/clientes')}>Clientes</a>

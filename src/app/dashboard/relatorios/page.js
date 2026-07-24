@@ -90,6 +90,12 @@ export default function Relatorios() {
   })
   const topProducts = Object.entries(productCount).sort((a, b) => b[1] - a[1]).slice(0, 5)
 
+  const ratedOrders = orders.filter(o => o.rating)
+  const avgRating = ratedOrders.length > 0
+    ? ratedOrders.reduce((sum, o) => sum + o.rating, 0) / ratedOrders.length
+    : null
+  const recentComments = orders.filter(o => o.rating_comment).slice(0, 5)
+
   if (loading) return <p style={{ color: '#6C757D', padding: 24 }}>Carregando...</p>
 
   return (
@@ -178,6 +184,29 @@ export default function Relatorios() {
             <p style={{ color: '#adb5bd', fontSize: 13 }}>Sem dados ainda</p>
           )}
         </div>
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+        <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 16 }}>AVALIAÇÃO DOS CLIENTES</div>
+        {avgRating !== null ? (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: recentComments.length > 0 ? 16 : 0 }}>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#1A1A2E' }}>{avgRating.toFixed(1)}</div>
+              <div>
+                <div style={{ fontSize: 14 }}>{'⭐'.repeat(Math.round(avgRating))}</div>
+                <div style={{ fontSize: 12, color: '#6C757D' }}>{ratedOrders.length + ' avaliação(ões)'}</div>
+              </div>
+            </div>
+            {recentComments.map(order => (
+              <div key={order.id} style={{ padding: '8px 0', borderTop: '1px solid #F8F9FA', fontSize: 13 }}>
+                <span style={{ fontSize: 12 }}>{'⭐'.repeat(order.rating)}</span>
+                <span style={{ color: '#6C757D', marginLeft: 8, fontStyle: 'italic' }}>"{order.rating_comment}"</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: '#adb5bd', fontSize: 13 }}>Sem avaliações neste período</p>
+        )}
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20, marginBottom: 24 }}>

@@ -30,6 +30,7 @@ export default function Pedidos() {
   const router = useRouter()
   const [orders, setOrders] = useState([])
   const [tenantId, setTenantId] = useState(null)
+  const [tenant, setTenant] = useState(null)
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState(null)
   const [filter, setFilter] = useState('todos')
@@ -39,9 +40,10 @@ export default function Pedidos() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       const { data: userData } = await supabase
-        .from('users').select('tenant_id').eq('id', user.id).single()
+        .from('users').select('tenant_id, tenants(*)').eq('id', user.id).single()
       if (userData) {
         setTenantId(userData.tenant_id)
+        setTenant(userData.tenants)
         loadOrders(userData.tenant_id)
       }
       setLoading(false)
@@ -64,6 +66,21 @@ export default function Pedidos() {
     const nextStatus = STATUS_FLOW[currentIndex + 1]
     const update = { status: nextStatus }
     if (nextStatus === 'impresso') update.printed_at = new Date().toISOString()
+
+    if (nextStatus === 'entregue' && order.order_type !== 'salao' && tenant?.cashback_enabled && Number(tenant.cashback_percent) > 0 && order.customer_phone) {
+      const cashbackEarned = Number(order.total) * (Number(tenant.cashback_percent) / 100)
+      update.cashback_earned = cashbackEarned
+
+      const { data: customer } = await supabase
+        .from('customers').select('id, cashback_balance')
+        .eq('tenant_id', tenantId).eq('phone', order.customer_phone).single()
+      if (customer) {
+        await supabase.from('customers')
+          .update({ cashback_balance: Number(customer.cashback_balance || 0) + cashbackEarned })
+          .eq('id', customer.id)
+      }
+    }
+
     await supabase.from('orders').update(update).eq('id', order.id)
     loadOrders(tenantId)
   }
@@ -200,7 +217,13 @@ ${linha}
                   {order.order_type === 'salao'
                     ? ' · Mesa ' + order.table_number
                     : ' · ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
+                  {order.rating && ' · ' + '⭐'.repeat(order.rating)}
                 </div>
+                {order.scheduled_for && new Date(order.scheduled_for) > new Date() && (
+                  <div style={{ display: 'inline-block', marginTop: 6, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#FFF8E8', color: '#B8860B' }}>
+                    📅 Agendado para {new Date(order.scheduled_for).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#00B894' }}>
@@ -255,10 +278,29 @@ ${linha}
                       <span style={{ color: '#1A1A2E' }}>{'R$ ' + Number(order.delivery_fee).toFixed(2)}</span>
                     </div>
                   )}
+                  {Number(order.discount_amount) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: 13 }}>
+                      <span style={{ color: '#6C757D' }}>Cupom {order.coupon_code ? '(' + order.coupon_code + ')' : ''}</span>
+                      <span style={{ color: '#e53935' }}>{'- R$ ' + Number(order.discount_amount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {Number(order.cashback_used) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: 13 }}>
+                      <span style={{ color: '#6C757D' }}>Cashback usado</span>
+                      <span style={{ color: '#e53935' }}>{'- R$ ' + Number(order.cashback_used).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: 14, fontWeight: 700 }}>
                     <span style={{ color: '#1A1A2E' }}>Total</span>
                     <span style={{ color: '#00B894' }}>{'R$ ' + Number(order.total).toFixed(2)}</span>
                   </div>
+                  {order.rating && (
+                    <div style={{ padding: '10px 0 0', fontSize: 13 }}>
+                      <span style={{ color: '#1A1A2E', fontWeight: 600 }}>Avaliação: </span>
+                      <span>{'⭐'.repeat(order.rating)}</span>
+                      {order.rating_comment && <div style={{ color: '#6C757D', fontSize: 12, marginTop: 4, fontStyle: 'italic' }}>"{order.rating_comment}"</div>}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>

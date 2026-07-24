@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
+const DIETARY_TAGS = [
+  { key: 'vegetariano', label: 'Vegetariano', icon: '🌱' },
+  { key: 'vegano', label: 'Vegano', icon: '🌿' },
+  { key: 'sem_gluten', label: 'Sem Glúten', icon: '🌾' },
+  { key: 'sem_lactose', label: 'Sem Lactose', icon: '🥛' },
+  { key: 'picante', label: 'Picante', icon: '🌶️' }
+]
+
 export default function Produtos() {
   const router = useRouter()
   const [products, setProducts] = useState([])
@@ -18,7 +26,10 @@ export default function Produtos() {
   const [imagePreview, setImagePreview] = useState(null)
   const [variations, setVariations] = useState([])
   const [newVariation, setNewVariation] = useState({ name: '', price: '' })
-  const [form, setForm] = useState({ name: '', description: '', price: '', category_id: '', image_url: '' })
+  const [form, setForm] = useState({
+    name: '', description: '', price: '', category_id: '', image_url: '',
+    dietary_tags: [], stock_enabled: false, stock_quantity: '', low_stock_alert: '5'
+  })
 
   useEffect(() => {
     async function loadData() {
@@ -69,6 +80,15 @@ export default function Produtos() {
     return data.publicUrl
   }
 
+  function toggleDietaryTag(key) {
+    setForm(prev => ({
+      ...prev,
+      dietary_tags: prev.dietary_tags.includes(key)
+        ? prev.dietary_tags.filter(t => t !== key)
+        : [...prev.dietary_tags, key]
+    }))
+  }
+
   function handleEdit(product) {
     setEditingId(product.id)
     setForm({
@@ -76,7 +96,11 @@ export default function Produtos() {
       description: product.description || '',
       price: product.price,
       category_id: product.category_id || '',
-      image_url: product.image_url || ''
+      image_url: product.image_url || '',
+      dietary_tags: product.dietary_tags || [],
+      stock_enabled: product.stock_enabled || false,
+      stock_quantity: product.stock_quantity ?? '',
+      low_stock_alert: product.low_stock_alert ?? '5'
     })
     setImagePreview(product.image_url || null)
     setImageFile(null)
@@ -92,7 +116,7 @@ export default function Produtos() {
     setImagePreview(null)
     setVariations([])
     setNewVariation({ name: '', price: '' })
-    setForm({ name: '', description: '', price: '', category_id: '', image_url: '' })
+    setForm({ name: '', description: '', price: '', category_id: '', image_url: '', dietary_tags: [], stock_enabled: false, stock_quantity: '', low_stock_alert: '5' })
     setError('')
   }
 
@@ -125,7 +149,11 @@ export default function Produtos() {
       price: variations.length > 0 ? Math.min(...variations.map(v => parseFloat(v.price))) : parseFloat(form.price),
       category_id: form.category_id || null,
       image_url: imageUrl || null,
-      position: editingId ? undefined : products.length
+      position: editingId ? undefined : products.length,
+      dietary_tags: form.dietary_tags,
+      stock_enabled: form.stock_enabled,
+      stock_quantity: form.stock_enabled && form.stock_quantity !== '' ? parseInt(form.stock_quantity) : null,
+      low_stock_alert: form.stock_enabled && form.low_stock_alert !== '' ? parseInt(form.low_stock_alert) : 5
     }
 
     let productId = editingId
@@ -257,6 +285,46 @@ export default function Produtos() {
           </div>
 
           <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>SELOS DIETÉTICOS</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {DIETARY_TAGS.map(tag => {
+                const active = form.dietary_tags.includes(tag.key)
+                return (
+                  <button key={tag.key} onClick={() => toggleDietaryTag(tag.key)}
+                    style={{ padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600, border: active ? '2px solid #00B894' : '1px solid #E9ECEF', background: active ? '#E8F8F5' : '#fff', color: active ? '#00B894' : '#6C757D' }}>
+                    {tag.icon} {tag.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div style={{ background: '#F8F9FA', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: form.stock_enabled ? 12 : 0 }}>
+              <input type="checkbox" checked={form.stock_enabled}
+                onChange={e => setForm({ ...form, stock_enabled: e.target.checked })}
+                style={{ width: 16, height: 16, cursor: 'pointer' }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Controlar estoque deste produto</span>
+            </label>
+            {form.stock_enabled && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, color: '#6C757D', marginBottom: 4 }}>Quantidade em estoque</label>
+                  <input type="number" placeholder="Ex: 20" value={form.stock_quantity}
+                    onChange={e => setForm({ ...form, stock_quantity: e.target.value })}
+                    style={{ display: 'block', width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 13, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, color: '#6C757D', marginBottom: 4 }}>Alertar quando restar</label>
+                  <input type="number" placeholder="Ex: 5" value={form.low_stock_alert}
+                    onChange={e => setForm({ ...form, low_stock_alert: e.target.value })}
+                    style={{ display: 'block', width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 13, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>FOTO DO PRODUTO</div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, border: '2px dashed #E9ECEF', cursor: 'pointer', background: '#F8F9FA' }}>
               <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
@@ -321,6 +389,11 @@ export default function Produtos() {
                   <div style={{ fontSize: 13, color: '#00B894', fontWeight: 700, marginTop: 4 }}>
                     {minPrice !== null ? 'A partir de R$ ' + minPrice.toFixed(2) : 'R$ ' + Number(product.price).toFixed(2)}
                   </div>
+                  {product.stock_enabled && (
+                    <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4, color: Number(product.stock_quantity) <= 0 ? '#e53935' : Number(product.stock_quantity) <= (product.low_stock_alert || 5) ? '#B8860B' : '#6C757D' }}>
+                      {Number(product.stock_quantity) <= 0 ? '⚠️ Esgotado' : Number(product.stock_quantity) <= (product.low_stock_alert || 5) ? '⚠️ Estoque baixo: ' + product.stock_quantity : 'Estoque: ' + product.stock_quantity}
+                    </div>
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
