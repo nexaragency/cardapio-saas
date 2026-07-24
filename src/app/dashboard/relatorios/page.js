@@ -19,6 +19,8 @@ export default function Relatorios() {
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState([])
   const [period, setPeriod] = useState('hoje')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
 
   useEffect(() => {
     async function loadData() {
@@ -35,33 +37,60 @@ export default function Relatorios() {
     loadData()
   }, [])
 
-  async function loadOrders(tid, p) {
+  function getPeriodRange(p, cFrom, cTo) {
     const now = new Date()
-    let from
-
     if (p === 'hoje') {
-      from = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-    } else if (p === 'semana') {
-      const day = now.getDay()
-      from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day).toISOString()
-    } else if (p === 'mes') {
-      from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString(), to: null, label: 'Hoje' }
     }
+    if (p === 'semana') {
+      const day = now.getDay()
+      return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - day).toISOString(), to: null, label: 'Esta semana' }
+    }
+    if (p === 'mes') {
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(), to: null, label: 'Este mês' }
+    }
+    if (p === 'personalizado' && cFrom && cTo) {
+      const fromDate = new Date(cFrom + 'T00:00:00')
+      const toDate = new Date(cTo + 'T23:59:59')
+      return { from: fromDate.toISOString(), to: toDate.toISOString(), label: fromDate.toLocaleDateString('pt-BR') + ' a ' + toDate.toLocaleDateString('pt-BR') }
+    }
+    return { from: null, to: null, label: '' }
+  }
 
-    const { data } = await supabase
+  async function loadOrders(tid, p, cFrom, cTo) {
+    const { from, to } = getPeriodRange(p, cFrom, cTo)
+    if (!from) return
+
+    let query = supabase
       .from('orders')
       .select('*, order_items(*)')
       .eq('tenant_id', tid)
       .eq('status', 'entregue')
       .gte('created_at', from)
       .order('created_at', { ascending: false })
+    if (to) query = query.lte('created_at', to)
 
+    const { data } = await query
     setOrders(data || [])
   }
 
   function handlePeriod(p) {
     setPeriod(p)
-    loadOrders(tenantId, p)
+    if (p !== 'personalizado') loadOrders(tenantId, p)
+    else if (customFrom && customTo) loadOrders(tenantId, p, customFrom, customTo)
+  }
+
+  function applyCustomPeriod() {
+    if (!customFrom || !customTo) return
+    loadOrders(tenantId, 'personalizado', customFrom, customTo)
+  }
+
+  function handleExportPDF() {
+    const { from, to, label } = getPeriodRange(period, customFrom, customTo)
+    if (!from) return
+    const params = new URLSearchParams({ from, label })
+    if (to) params.set('to', to)
+    window.open('/relatorios-pdf?' + params.toString(), '_blank')
   }
 
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0)
@@ -105,16 +134,16 @@ export default function Relatorios() {
     <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Relatórios</h1>
     <p style={{ color: '#6C757D', margin: 0, fontSize: 14 }}>Apenas pedidos com status Entregue</p>
   </div>
-  <div style={{ display: 'flex', gap: 8 }}>
+  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
     {hasAccess('pdf') && (
       <button
-        onClick={() => window.print()}
+        onClick={handleExportPDF}
         style={{ padding: '7px 16px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600, background: '#F0F4FF', color: '#4A6CF7', border: '1px solid #E9ECEF' }}
       >
         Exportar PDF
       </button>
     )}
-          {['hoje', 'semana', 'mes'].map(p => (
+          {['hoje', 'semana', 'mes', 'personalizado'].map(p => (
             <button
               key={p}
               onClick={() => handlePeriod(p)}
@@ -125,11 +154,30 @@ export default function Relatorios() {
                 border: period === p ? '1px solid #1A1A2E' : '1px solid #E9ECEF'
               }}
             >
-              {p === 'hoje' ? 'Hoje' : p === 'semana' ? 'Semana' : 'Mês'}
+              {p === 'hoje' ? 'Hoje' : p === 'semana' ? 'Semana' : p === 'mes' ? 'Mês' : 'Personalizado'}
             </button>
           ))}
         </div>
       </div>
+
+      {period === 'personalizado' && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6C757D', marginBottom: 6 }}>De</label>
+            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 13, color: '#1A1A2E', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6C757D', marginBottom: 6 }}>Até</label>
+            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 13, color: '#1A1A2E', outline: 'none' }} />
+          </div>
+          <button onClick={applyCustomPeriod} disabled={!customFrom || !customTo}
+            style={{ padding: '9px 18px', background: '#00B894', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            Aplicar
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
         <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>

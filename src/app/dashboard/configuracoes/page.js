@@ -19,6 +19,7 @@ const [primaryColor, setPrimaryColor] = useState('#00B894')
   const [logoPreview, setLogoPreview] = useState(null)
   const [form, setForm] = useState({
     name: '', phone: '', slug: '', city: '',
+    cnpj: '', email: '',
     open_time: '18:00', close_time: '23:00',
     cashback_enabled: false, cashback_percent: '5',
     meta_pixel_id: '', google_ads_id: '', tiktok_pixel_id: ''
@@ -37,6 +38,8 @@ const [primaryColor, setPrimaryColor] = useState('#00B894')
   phone: userData.tenants.phone || '',
   slug: userData.tenants.slug || '',
   city: userData.tenants.city || '',
+  cnpj: userData.tenants.cnpj || '',
+  email: userData.tenants.email || '',
   open_time: userData.tenants.open_time || '18:00',
   close_time: userData.tenants.close_time || '23:00',
   cashback_enabled: userData.tenants.cashback_enabled || false,
@@ -87,6 +90,8 @@ setPrimaryColor(userData.tenants.primary_color || '#00B894')
   name: form.name,
   phone: form.phone,
   city: form.city,
+  cnpj: form.cnpj.trim() || null,
+  email: form.email.trim() || null,
   open_time: form.open_time,
   close_time: form.close_time,
   primary_color: primaryColor,
@@ -175,12 +180,26 @@ const cardapioUrl = 'https://cardapio.nexarmkt.com.br/cardapio/' + form.slug
             onChange={e => setForm({ ...form, city: e.target.value })}
             style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
         </div>
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Número do WhatsApp</label>
           <input type="text" placeholder="Ex: 45999887766" value={form.phone}
             onChange={e => setForm({ ...form, phone: e.target.value })}
             style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
           <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6C757D' }}>Formato: DDD + número. Ex: 45999887766</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 8 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>CNPJ</label>
+            <input type="text" placeholder="00.000.000/0000-00" value={form.cnpj}
+              onChange={e => setForm({ ...form, cnpj: e.target.value })}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>E-mail</label>
+            <input type="email" placeholder="contato@seurestaurante.com" value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+              style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
         </div>
       </div>
 
