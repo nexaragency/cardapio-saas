@@ -25,6 +25,8 @@ function RelatoriosPdfContent() {
   const from = searchParams.get('from')
   const to = searchParams.get('to')
   const label = searchParams.get('label') || 'Período selecionado'
+  const orderType = searchParams.get('orderType') || 'todos'
+  const orderTypeLabel = orderType === 'delivery' ? 'Delivery' : orderType === 'salao' ? 'Loja' : 'Todos os pedidos'
 
   const [tenant, setTenant] = useState(null)
   const [orders, setOrders] = useState([])
@@ -49,6 +51,7 @@ function RelatoriosPdfContent() {
           .gte('created_at', from)
           .order('created_at', { ascending: false })
         if (to) query = query.lte('created_at', to)
+        if (orderType !== 'todos') query = query.eq('order_type', orderType)
         const { data } = await query
         setOrders(data || [])
       }
@@ -56,7 +59,7 @@ function RelatoriosPdfContent() {
       setLoading(false)
     }
     loadData()
-  }, [from, to])
+  }, [from, to, orderType])
 
   useEffect(() => {
     if (!loading && tenant) {
@@ -120,7 +123,7 @@ function RelatoriosPdfContent() {
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>Relatório de vendas</div>
-            <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>{label}</div>
+            <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>{label} · {orderTypeLabel}</div>
           </div>
         </div>
 
@@ -174,7 +177,7 @@ function RelatoriosPdfContent() {
                 <th style={{ padding: '6px 4px', borderBottom: '1px solid #E9ECEF' }}>Pedido</th>
                 <th style={{ padding: '6px 4px', borderBottom: '1px solid #E9ECEF' }}>Data</th>
                 <th style={{ padding: '6px 4px', borderBottom: '1px solid #E9ECEF' }}>Cliente</th>
-                <th style={{ padding: '6px 4px', borderBottom: '1px solid #E9ECEF' }}>Pagamento</th>
+                <th style={{ padding: '6px 4px', borderBottom: '1px solid #E9ECEF' }}>Origem</th>
                 <th style={{ padding: '6px 4px', borderBottom: '1px solid #E9ECEF', textAlign: 'right' }}>Total</th>
               </tr>
             </thead>
@@ -184,7 +187,9 @@ function RelatoriosPdfContent() {
                   <td style={{ padding: '5px 4px', borderBottom: '1px solid #F8F9FA' }}>#{order.id.slice(-6).toUpperCase()}</td>
                   <td style={{ padding: '5px 4px', borderBottom: '1px solid #F8F9FA' }}>{new Date(order.created_at).toLocaleDateString('pt-BR')}</td>
                   <td style={{ padding: '5px 4px', borderBottom: '1px solid #F8F9FA' }}>{order.customer_name}</td>
-                  <td style={{ padding: '5px 4px', borderBottom: '1px solid #F8F9FA' }}>{PAYMENT_LABEL[order.payment_method] || order.payment_method}</td>
+                  <td style={{ padding: '5px 4px', borderBottom: '1px solid #F8F9FA' }}>
+                    {order.order_type === 'salao' ? 'Loja (Mesa ' + order.table_number + ')' : 'Delivery · ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
+                  </td>
                   <td style={{ padding: '5px 4px', borderBottom: '1px solid #F8F9FA', textAlign: 'right', fontWeight: 600 }}>R$ {Number(order.total).toFixed(2)}</td>
                 </tr>
               ))}

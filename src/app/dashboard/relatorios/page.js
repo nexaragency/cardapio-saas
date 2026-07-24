@@ -21,6 +21,7 @@ export default function Relatorios() {
   const [period, setPeriod] = useState('hoje')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  const [orderTypeFilter, setOrderTypeFilter] = useState('todos')
 
   useEffect(() => {
     async function loadData() {
@@ -88,23 +89,30 @@ export default function Relatorios() {
   function handleExportPDF() {
     const { from, to, label } = getPeriodRange(period, customFrom, customTo)
     if (!from) return
-    const params = new URLSearchParams({ from, label })
+    const params = new URLSearchParams({ from, label, orderType: orderTypeFilter })
     if (to) params.set('to', to)
     window.open('/relatorios-pdf?' + params.toString(), '_blank')
   }
 
-  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0)
-  const totalOrders = orders.length
+  const filteredOrders = orderTypeFilter === 'todos'
+    ? orders
+    : orders.filter(o => o.order_type === orderTypeFilter)
+
+  const deliveryRevenue = orders.filter(o => o.order_type === 'delivery').reduce((sum, o) => sum + Number(o.total), 0)
+  const lojaRevenue = orders.filter(o => o.order_type === 'salao').reduce((sum, o) => sum + Number(o.total), 0)
+
+  const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.total), 0)
+  const totalOrders = filteredOrders.length
   const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
   const paymentCount = {}
-  orders.forEach(o => {
+  filteredOrders.forEach(o => {
     paymentCount[o.payment_method] = (paymentCount[o.payment_method] || 0) + 1
   })
   const topPayment = Object.entries(paymentCount).sort((a, b) => b[1] - a[1])[0]
 
   const neighborhoodCount = {}
-  orders.forEach(o => {
+  filteredOrders.forEach(o => {
     if (o.neighborhood) {
       neighborhoodCount[o.neighborhood] = (neighborhoodCount[o.neighborhood] || 0) + 1
     }
@@ -112,18 +120,18 @@ export default function Relatorios() {
   const topNeighborhood = Object.entries(neighborhoodCount).sort((a, b) => b[1] - a[1])[0]
 
   const productCount = {}
-  orders.forEach(o => {
+  filteredOrders.forEach(o => {
     o.order_items.forEach(item => {
       productCount[item.product_name] = (productCount[item.product_name] || 0) + item.quantity
     })
   })
   const topProducts = Object.entries(productCount).sort((a, b) => b[1] - a[1]).slice(0, 5)
 
-  const ratedOrders = orders.filter(o => o.rating)
+  const ratedOrders = filteredOrders.filter(o => o.rating)
   const avgRating = ratedOrders.length > 0
     ? ratedOrders.reduce((sum, o) => sum + o.rating, 0) / ratedOrders.length
     : null
-  const recentComments = orders.filter(o => o.rating_comment).slice(0, 5)
+  const recentComments = filteredOrders.filter(o => o.rating_comment).slice(0, 5)
 
   if (loading) return <p style={{ color: '#6C757D', padding: 24 }}>Carregando...</p>
 
@@ -160,6 +168,23 @@ export default function Relatorios() {
         </div>
       </div>
 
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        {['todos', 'delivery', 'salao'].map(t => (
+          <button
+            key={t}
+            onClick={() => setOrderTypeFilter(t)}
+            style={{
+              padding: '7px 16px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+              background: orderTypeFilter === t ? '#00B894' : '#fff',
+              color: orderTypeFilter === t ? '#fff' : '#6C757D',
+              border: orderTypeFilter === t ? '1px solid #00B894' : '1px solid #E9ECEF'
+            }}
+          >
+            {t === 'todos' ? 'Todos' : t === 'delivery' ? 'Delivery' : 'Loja'}
+          </button>
+        ))}
+      </div>
+
       {period === 'personalizado' && (
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 16, marginBottom: 24 }}>
           <div>
@@ -185,6 +210,11 @@ export default function Relatorios() {
           <div style={{ fontSize: 28, fontWeight: 700, color: '#00B894' }}>
             {'R$ ' + totalRevenue.toFixed(2)}
           </div>
+          {orderTypeFilter === 'todos' && (
+            <div style={{ fontSize: 11, color: '#6C757D', marginTop: 8 }}>
+              Delivery: R$ {deliveryRevenue.toFixed(2)} · Loja: R$ {lojaRevenue.toFixed(2)}
+            </div>
+          )}
         </div>
         <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: '20px 24px' }}>
           <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 10 }}>PEDIDOS ENTREGUES</div>
@@ -277,17 +307,18 @@ export default function Relatorios() {
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 20 }}>
         <div style={{ fontSize: 11, color: '#6C757D', fontWeight: 600, letterSpacing: '0.8px', marginBottom: 16 }}>ÚLTIMOS PEDIDOS ENTREGUES</div>
-        {orders.length === 0 && (
+        {filteredOrders.length === 0 && (
           <p style={{ color: '#adb5bd', fontSize: 13 }}>Nenhum pedido entregue neste período</p>
         )}
-        {orders.slice(0, 10).map(order => (
+        {filteredOrders.slice(0, 10).map(order => (
           <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #F8F9FA' }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>
                 {'#' + order.id.slice(-6).toUpperCase() + ' — ' + order.customer_name}
               </div>
               <div style={{ fontSize: 12, color: '#6C757D', marginTop: 2 }}>
-                {new Date(order.created_at).toLocaleString('pt-BR') + ' · ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
+                {new Date(order.created_at).toLocaleString('pt-BR') + ' · '}
+                {order.order_type === 'salao' ? 'Loja (Mesa ' + order.table_number + ')' : 'Delivery · ' + (PAYMENT_LABEL[order.payment_method] || order.payment_method)}
               </div>
             </div>
             <span style={{ fontSize: 14, fontWeight: 700, color: '#00B894' }}>
