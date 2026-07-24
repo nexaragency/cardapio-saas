@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 const ASAAS_API_URL = process.env.ASAAS_ENV === 'sandbox'
   ? 'https://api-sandbox.asaas.com/v3'
@@ -13,6 +8,7 @@ const ASAAS_API_KEY = process.env.ASAAS_API_KEY
 
 export async function POST(request) {
   try {
+    const supabase = supabaseAdmin()
     const { tenant_id, email, name, cpfCnpj, phone } = await request.json()
 
     if (!tenant_id || !email || !name || !cpfCnpj) {

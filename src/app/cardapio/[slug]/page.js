@@ -97,12 +97,13 @@ export default function CardapioPublico({ params }) {
 
       const savedOrderId = localStorage.getItem('order_' + slug)
       if (savedOrderId) {
-        const { data: savedOrder } = await supabase
-          .from('orders').select('*, order_items(*)')
-          .eq('id', savedOrderId).single()
-        if (savedOrder && savedOrder.status !== 'entregue') {
-          setCurrentOrder(savedOrder)
-          setStep('tracking')
+        const res = await fetch('/api/public/orders/' + savedOrderId)
+        if (res.ok) {
+          const { order: savedOrder } = await res.json()
+          if (savedOrder && savedOrder.status !== 'entregue') {
+            setCurrentOrder(savedOrder)
+            setStep('tracking')
+          }
         }
       }
 
@@ -116,29 +117,35 @@ export default function CardapioPublico({ params }) {
     if (currentOrder.order_type === 'salao') return
     if (Notification.permission === 'default') Notification.requestPermission()
 
-    const channel = supabase
-      .channel('order_' + currentOrder.id)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'orders',
-        filter: 'id=eq.' + currentOrder.id
-      }, payload => {
-        const updated = payload.new
-        setCurrentOrder(prev => ({ ...prev, ...updated }))
-        if (updated.status === 'saiu_entrega' && Notification.permission === 'granted') {
+    const interval = setInterval(async () => {
+      const res = await fetch('/api/public/orders/' + currentOrder.id)
+      if (!res.ok) return
+      const { order: updated } = await res.json()
+      if (!updated) return
+
+      setCurrentOrder(prev => {
+        if (prev && updated.status !== prev.status && updated.status === 'saiu_entrega' && Notification.permission === 'granted') {
           new Notification('Seu pedido saiu para entrega!', { body: 'O motoboy está a caminho!' })
         }
-        if (updated.status === 'entregue') localStorage.removeItem('order_' + slug)
+        return { ...prev, ...updated }
       })
-      .subscribe()
+      if (updated.status === 'entregue') {
+        localStorage.removeItem('order_' + slug)
+        clearInterval(interval)
+      }
+    }, 6000)
 
-    return () => { supabase.removeChannel(channel) }
+    return () => clearInterval(interval)
   }, [currentOrder?.id])
 
   async function lookupCustomer(phone) {
     if (!phone || phone.length < 8 || !tenant) return
-    const { data } = await supabase
-      .from('customers').select('*')
-      .eq('tenant_id', tenant.id).eq('phone', phone).single()
+    const res = await fetch('/api/public/customers/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, phone })
+    })
+    const { customer: data } = await res.json()
     if (data) {
       setForm(prev => ({ ...prev, name: data.name || prev.name, address: data.address || prev.address, neighborhood: data.neighborhood || prev.neighborhood, city: data.city || prev.city }))
       if (data.neighborhood) checkDeliveryFee(data.neighborhood)
@@ -191,6 +198,7 @@ export default function CardapioPublico({ params }) {
     const cartItem = {
       id: selectedProduct.id + (selectedVariation?.id || '') + Date.now(),
       productId: selectedProduct.id,
+      variationId: selectedVariation?.id || null,
       name: selectedProduct.name + (selectedVariation ? ' (' + selectedVariation.name + ')' : ''),
       price: selectedVariation ? Number(selectedVariation.price) : Number(selectedProduct.price),
       addons: selectedAddons,
@@ -236,58 +244,28 @@ export default function CardapioPublico({ params }) {
 
     setSubmitting(true)
 
-    const { data: order, error: orderError } = await supabase
-      .from('orders').insert({
-        tenant_id: tenant.id,
-        customer_name: tableNumber ? 'Mesa ' + tableNumber : form.name,
-        customer_phone: form.phone || null,
-        customer_address: form.address || null,
-        neighborhood: form.neighborhood || null,
-        city: form.city || null,
-        payment_method: form.payment_method,
-        change_for: form.change_for ? parseFloat(form.change_for) : null,
-        delivery_fee: tableNumber ? 0 : (deliveryFee || 0),
-        total: tableNumber ? getSubtotal() : getTotal(),
-        status: 'novo',
-        table_number: tableNumber ? parseInt(tableNumber) : null,
-        order_type: tableNumber ? 'salao' : 'delivery'
-      }).select().single()
+    const res = await fetch('/api/public/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slug,
+        tableNumber,
+        cart: cart.map(item => ({
+          productId: item.productId,
+          variationId: item.variationId || null,
+          qty: item.qty,
+          observation: item.observation,
+          addons: item.addons.map(a => ({ id: a.id }))
+        })),
+        form
+      })
+    })
 
-    if (orderError) { alert('Erro ao fazer pedido. Tente novamente.'); setSubmitting(false); return }
+    const data = await res.json()
+    if (!res.ok || data.error) { alert(data.error || 'Erro ao fazer pedido. Tente novamente.'); setSubmitting(false); return }
 
-    for (const item of cart) {
-      const addonTotal = item.addons.reduce((sum, a) => sum + Number(a.price), 0)
-      const { data: orderItem } = await supabase.from('order_items').insert({
-        order_id: order.id,
-        product_id: item.productId,
-        product_name: item.name,
-        quantity: item.qty,
-        unit_price: item.price + addonTotal,
-        subtotal: (item.price + addonTotal) * item.qty,
-        observation: item.observation || null
-      }).select().single()
-
-      if (orderItem && item.addons.length > 0) {
-        await supabase.from('order_item_addons').insert(
-          item.addons.map(a => ({
-            order_item_id: orderItem.id,
-            addon_name: a.name,
-            addon_price: Number(a.price)
-          }))
-        )
-      }
-    }
-
-    if (!tableNumber) {
-      await supabase.from('customers').upsert({
-        tenant_id: tenant.id, name: form.name, phone: form.phone,
-        address: form.address, neighborhood: form.neighborhood, city: form.city
-      }, { onConflict: 'tenant_id,phone' })
-    }
-
-    localStorage.setItem('order_' + slug, order.id)
-    const { data: fullOrder } = await supabase.from('orders').select('*, order_items(*)').eq('id', order.id).single()
-    setCurrentOrder(fullOrder)
+    localStorage.setItem('order_' + slug, data.order.id)
+    setCurrentOrder(data.order)
     setCart([])
     setSubmitting(false)
     setStep('tracking')

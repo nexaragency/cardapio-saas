@@ -1,12 +1,23 @@
-import { createClient } from '@supabase/supabase-js'
+import { timingSafeEqual } from 'crypto'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+function isValidToken(received) {
+  const expected = process.env.ASAAS_WEBHOOK_TOKEN
+  if (!expected || !received) return false
+  const a = Buffer.from(received)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
 
 export async function POST(request) {
   try {
+    const receivedToken = request.headers.get('asaas-access-token')
+    if (!isValidToken(receivedToken)) {
+      return Response.json({ error: 'Token invalido' }, { status: 401 })
+    }
+
+    const supabase = supabaseAdmin()
     const event = await request.json()
     const { event: eventType, payment } = event
 

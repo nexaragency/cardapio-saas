@@ -25,14 +25,14 @@ function CadastroForm() {
         return
       }
 
-      const { data } = await supabase
-        .from('invites')
-        .select('*')
-        .eq('code', code.toUpperCase())
-        .eq('used', false)
-        .single()
+      const res = await fetch('/api/invites/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      })
+      const { valid } = await res.json()
 
-      if (data) {
+      if (valid) {
         setInviteCode(code.toUpperCase())
         setInviteValid(true)
       } else {
@@ -74,11 +74,11 @@ function CadastroForm() {
     })
 
     if (inviteCode) {
-      await supabase.from('invites').update({
-        used: true,
-        used_at: new Date().toISOString(),
-        used_by: tenant.id
-      }).eq('code', inviteCode)
+      await fetch('/api/invites/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: inviteCode, tenant_id: tenant.id })
+      })
     }
 
     router.push('/dashboard')

@@ -2,9 +2,6 @@
 
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-
-const ADMIN_PASSWORD = 'nexar@admin2024'
 
 const MENU_ITEMS = [
   { id: 'convites', label: 'Convites' },
@@ -23,13 +20,10 @@ const STATUS_COLOR = {
 const PRICES = { starter: 59, pro: 99, premium: 149 }
 
 export default function AdminPage() {
-  const [authenticated, setAuthenticated] = useState(() => {
-  if (typeof window !== 'undefined') {
-    return sessionStorage.getItem('nexar_admin') === 'true'
-  }
-  return false
-})
+  const [authenticated, setAuthenticated] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
   const [activeMenu, setActiveMenu] = useState('convites')
   const [invites, setInvites] = useState([])
   const [newEmail, setNewEmail] = useState('')
@@ -37,47 +31,65 @@ export default function AdminPage() {
   const [copied, setCopied] = useState(null)
   const [clientes, setClientes] = useState([])
 
-  function handleLogin() {
-  if (password === ADMIN_PASSWORD) {
-    sessionStorage.setItem('nexar_admin', 'true')
-    setAuthenticated(true)
-    loadInvites()
-    loadClientes()
-  } else {
-    alert('Senha incorreta')
+  useEffect(() => {
+    async function checkSession() {
+      const res = await fetch('/api/admin/session')
+      const { authenticated: ok } = await res.json()
+      setAuthenticated(ok)
+      setCheckingSession(false)
+    }
+    checkSession()
+  }, [])
+
+  async function handleLogin() {
+    setLoginError('')
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    })
+    if (res.ok) {
+      setAuthenticated(true)
+    } else {
+      setLoginError('Senha incorreta')
+    }
   }
-}
-useEffect(() => {
-  if (authenticated) {
-    loadInvites()
-    loadClientes()
-  }
-}, [authenticated])
+
+  useEffect(() => {
+    if (authenticated) {
+      loadInvites()
+      loadClientes()
+    }
+  }, [authenticated])
 
   async function loadInvites() {
-    const { data } = await supabase.from('invites').select('*').order('created_at', { ascending: false })
+    const res = await fetch('/api/admin/invites')
+    if (!res.ok) return
+    const { invites: data } = await res.json()
     setInvites(data || [])
   }
 
   async function loadClientes() {
-    const { data } = await supabase
-      .from('tenants')
-      .select('*, subscriptions(*), users(email, name)')
-      .order('created_at', { ascending: false })
+    const res = await fetch('/api/admin/clientes')
+    if (!res.ok) return
+    const { clientes: data } = await res.json()
     setClientes(data || [])
   }
 
   async function generateInvite() {
     setGenerating(true)
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase()
-    await supabase.from('invites').insert({ code, email: newEmail || null })
+    await fetch('/api/admin/invites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newEmail || null })
+    })
     setNewEmail('')
     loadInvites()
     setGenerating(false)
   }
 
   async function deleteInvite(id) {
-    await supabase.from('invites').delete().eq('id', id)
+    await fetch('/api/admin/invites/' + id, { method: 'DELETE' })
     loadInvites()
   }
 
@@ -88,6 +100,8 @@ useEffect(() => {
   }
 
   
+
+  if (checkingSession) return null
 
   if (!authenticated) {
     return (
@@ -104,6 +118,7 @@ useEffect(() => {
             onChange={e => setPassword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
             style={{ display: 'block', width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box', marginBottom: 12 }} />
+          {loginError && <p style={{ color: '#e53935', fontSize: 13, margin: '0 0 12px' }}>{loginError}</p>}
           <button onClick={handleLogin}
             style={{ width: '100%', padding: '11px', background: '#1A1A2E', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
             Entrar
