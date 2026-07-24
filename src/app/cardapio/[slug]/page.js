@@ -139,6 +139,67 @@ export default function CardapioPublico({ params }) {
   }, [slug])
 
   useEffect(() => {
+    if (!tenant) return
+
+    if (tenant.meta_pixel_id && !window.fbq) {
+      !function (f, b, e, v, n, t, s) {
+        if (f.fbq) return; n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+        }
+        if (!f._fbq) f._fbq = n
+        n.push = n; n.loaded = true; n.version = '2.0'; n.queue = []
+        t = b.createElement(e); t.async = true; t.src = v
+        s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s)
+      }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
+      window.fbq('init', tenant.meta_pixel_id)
+      window.fbq('track', 'PageView')
+    }
+
+    if (tenant.tiktok_pixel_id && !window.ttq) {
+      !function (w, d, t) {
+        w.TiktokAnalyticsObject = t
+        var ttq = w[t] = w[t] || []
+        ttq.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie']
+        ttq.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } }
+        for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i])
+        ttq.load = function (e, n) {
+          var i = 'https://analytics.tiktok.com/i18n/pixel/events.js'
+          ttq._i = ttq._i || {}; ttq._i[e] = []; ttq._i[e]._u = i
+          ttq._t = ttq._t || {}; ttq._t[e] = +new Date
+          ttq._o = ttq._o || {}; ttq._o[e] = n || {}
+          var o = d.createElement('script'); o.type = 'text/javascript'; o.async = true; o.src = i + '?sdkid=' + e + '&lib=' + t
+          var a = d.getElementsByTagName('script')[0]; a.parentNode.insertBefore(o, a)
+        }
+        ttq.load(tenant.tiktok_pixel_id)
+        ttq.page()
+      }(window, document, 'ttq')
+    }
+
+    if (tenant.google_ads_id && !window.gtag) {
+      const script = document.createElement('script')
+      script.async = true
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=' + tenant.google_ads_id
+      document.head.appendChild(script)
+      window.dataLayer = window.dataLayer || []
+      window.gtag = function () { window.dataLayer.push(arguments) }
+      window.gtag('js', new Date())
+      window.gtag('config', tenant.google_ads_id)
+    }
+  }, [tenant])
+
+  function trackPixels(eventName, data = {}) {
+    if (typeof window === 'undefined') return
+    if (tenant?.meta_pixel_id && window.fbq) window.fbq('track', eventName, data)
+    if (tenant?.tiktok_pixel_id && window.ttq) {
+      const ttEventMap = { ViewContent: 'ViewContent', AddToCart: 'AddToCart', InitiateCheckout: 'InitiateCheckout', Purchase: 'CompletePayment' }
+      window.ttq.track(ttEventMap[eventName] || eventName, data)
+    }
+    if (eventName === 'Purchase' && tenant?.google_ads_id && window.gtag) {
+      window.gtag('event', 'conversion', { send_to: tenant.google_ads_id, value: data.value, currency: data.currency || 'BRL' })
+    }
+  }
+
+  useEffect(() => {
     if (!currentOrder) return
     if (currentOrder.order_type === 'salao') return
     if (Notification.permission === 'default') Notification.requestPermission()
@@ -241,6 +302,7 @@ export default function CardapioPublico({ params }) {
     setSelectedVariation(product.product_variations?.length === 1 ? product.product_variations[0] : null)
     setSelectedAddons([])
     setObservation('')
+    trackPixels('ViewContent', { content_ids: [product.id], content_name: product.name, content_type: 'product', value: Number(product.price), currency: 'BRL' })
   }
 
   function closeModal() {
@@ -285,6 +347,7 @@ export default function CardapioPublico({ params }) {
     }
 
     setCart(prev => [...prev, cartItem])
+    trackPixels('AddToCart', { content_ids: [cartItem.productId], content_name: cartItem.name, content_type: 'product', value: getModalTotal(), currency: 'BRL' })
     closeModal()
   }
 
@@ -351,6 +414,12 @@ export default function CardapioPublico({ params }) {
     if (!res.ok || data.error) { alert(data.error || 'Erro ao fazer pedido. Tente novamente.'); setSubmitting(false); return }
 
     localStorage.setItem('order_' + slug, data.order.id)
+    trackPixels('Purchase', {
+      value: Number(data.order.total),
+      currency: 'BRL',
+      content_ids: cart.map(i => i.productId),
+      num_items: getTotalItems()
+    })
     setCurrentOrder(data.order)
     setCart([])
     setCouponApplied(null)
@@ -781,7 +850,7 @@ export default function CardapioPublico({ params }) {
 
       {cart.length > 0 && step === 'menu' && !selectedProduct && (
         <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
-          <button onClick={() => setStep('checkout')}
+          <button onClick={() => { setStep('checkout'); trackPixels('InitiateCheckout', { value: getSubtotal(), currency: 'BRL', num_items: getTotalItems() }) }}
             style={{ background: cor, color: '#fff', border: 'none', borderRadius: 30, padding: '14px 32px', cursor: 'pointer', fontSize: 14, fontWeight: 700, boxShadow: '0 4px 20px ' + cor + '66', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>{getTotalItems()}</span>
             Ver pedido — R$ {getSubtotal().toFixed(2)}

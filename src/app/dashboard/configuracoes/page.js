@@ -20,7 +20,8 @@ const [primaryColor, setPrimaryColor] = useState('#00B894')
   const [form, setForm] = useState({
     name: '', phone: '', slug: '', city: '',
     open_time: '18:00', close_time: '23:00',
-    cashback_enabled: false, cashback_percent: '5'
+    cashback_enabled: false, cashback_percent: '5',
+    meta_pixel_id: '', google_ads_id: '', tiktok_pixel_id: ''
   })
 
   useEffect(() => {
@@ -39,7 +40,10 @@ const [primaryColor, setPrimaryColor] = useState('#00B894')
   open_time: userData.tenants.open_time || '18:00',
   close_time: userData.tenants.close_time || '23:00',
   cashback_enabled: userData.tenants.cashback_enabled || false,
-  cashback_percent: userData.tenants.cashback_percent ?? '5'
+  cashback_percent: userData.tenants.cashback_percent ?? '5',
+  meta_pixel_id: userData.tenants.meta_pixel_id || '',
+  google_ads_id: userData.tenants.google_ads_id || '',
+  tiktok_pixel_id: userData.tenants.tiktok_pixel_id || ''
 })
 setPrimaryColor(userData.tenants.primary_color || '#00B894')
         if (userData.tenants.banner_url) setBannerPreview(userData.tenants.banner_url)
@@ -87,7 +91,10 @@ setPrimaryColor(userData.tenants.primary_color || '#00B894')
   close_time: form.close_time,
   primary_color: primaryColor,
   cashback_enabled: form.cashback_enabled,
-  cashback_percent: form.cashback_percent ? parseFloat(form.cashback_percent) : 0
+  cashback_percent: form.cashback_percent ? parseFloat(form.cashback_percent) : 0,
+  meta_pixel_id: form.meta_pixel_id.trim() || null,
+  google_ads_id: form.google_ads_id.trim() || null,
+  tiktok_pixel_id: form.tiktok_pixel_id.trim() || null
 }
 
     if (bannerFile) {
@@ -250,6 +257,31 @@ const cardapioUrl = 'https://cardapio.nexarmkt.com.br/cardapio/' + form.slug
             </p>
           </div>
         )}
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#6C757D', letterSpacing: '0.8px', marginBottom: 8 }}>PIXELS DE RASTREAMENTO</div>
+        <p style={{ margin: '0 0 16px', fontSize: 12, color: '#6C757D' }}>
+          Cole aqui os IDs de pixel das plataformas de anúncio. Isso ativa o rastreamento automático de visualização de produto, adicionar ao carrinho e compra no seu cardápio — útil para quem roda tráfego pago.
+        </p>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Meta Pixel ID (Facebook/Instagram Ads)</label>
+          <input type="text" placeholder="Ex: 123456789012345" value={form.meta_pixel_id}
+            onChange={e => setForm({ ...form, meta_pixel_id: e.target.value })}
+            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Google Ads ID</label>
+          <input type="text" placeholder="Ex: AW-123456789" value={form.google_ads_id}
+            onChange={e => setForm({ ...form, google_ads_id: e.target.value })}
+            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>TikTok Pixel ID</label>
+          <input type="text" placeholder="Ex: CX1A2B3C4D5E6F7G8H9I" value={form.tiktok_pixel_id}
+            onChange={e => setForm({ ...form, tiktok_pixel_id: e.target.value })}
+            style={{ display: 'block', width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E9ECEF', fontSize: 14, color: '#1A1A2E', outline: 'none', boxSizing: 'border-box' }} />
+        </div>
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E9ECEF', borderRadius: 12, padding: 24, marginBottom: 20 }}>
